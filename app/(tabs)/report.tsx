@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
+  Animated,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
 import { DataTable } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AnimatedHeader from "@/components/AnimatedHeader";
 import PageTitle from "@/components/PageTitle";
 import SearchField from "@/components/SearchField";
 import { Colors } from "@/constants/theme";
@@ -81,6 +83,9 @@ export default function ReportScreen() {
   const palette = Colors[colorScheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
+  // 👇 Animated scroll tracking
+  const scrollY = useRef(new Animated.Value(0)).current;
+
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const itemsPerPage = 6;
@@ -95,16 +100,29 @@ export default function ReportScreen() {
   });
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <ScrollView
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: palette.background }]}
+    >
+      {/* Scrollable content */}
+      <Animated.ScrollView
+        style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
       >
         <PageTitle title="Report" />
 
         <View style={styles.actionsRow}>
           <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options-outline" size={18} color={palette.textPrimary} />
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={palette.textPrimary}
+            />
             <Text style={styles.filterButtonText}>Filter Report</Text>
           </TouchableOpacity>
           {/* <SearchField
@@ -130,19 +148,36 @@ export default function ReportScreen() {
           <View style={styles.tableWrapper}>
             <DataTable style={styles.table}>
               <DataTable.Header>
-                <DataTable.Title textStyle={styles.columnLabel} style={styles.nameColumn}>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
+                  style={styles.nameColumn}
+                >
                   Agent Name
                 </DataTable.Title>
-                <DataTable.Title textStyle={styles.columnLabel} style={styles.idColumn}>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
+                  style={styles.idColumn}
+                >
                   Agent ID
                 </DataTable.Title>
-                <DataTable.Title numeric textStyle={styles.columnLabel} style={styles.dateColumn}>
+                <DataTable.Title
+                  numeric
+                  textStyle={styles.columnLabel}
+                  style={styles.dateColumn}
+                >
                   Date
                 </DataTable.Title>
-                <DataTable.Title textStyle={styles.columnLabel} style={styles.statusColumn}>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
+                  style={styles.statusColumn}
+                >
                   Status
                 </DataTable.Title>
-                <DataTable.Title numeric textStyle={styles.columnLabel} style={styles.salesColumn}>
+                <DataTable.Title
+                  numeric
+                  textStyle={styles.columnLabel}
+                  style={styles.salesColumn}
+                >
                   Total Sales
                 </DataTable.Title>
               </DataTable.Header>
@@ -151,13 +186,23 @@ export default function ReportScreen() {
                 .slice(page * itemsPerPage, page * itemsPerPage + itemsPerPage)
                 .map((item) => (
                   <DataTable.Row key={item.id}>
-                    <DataTable.Cell textStyle={styles.rowText} style={styles.nameColumn}>
+                    <DataTable.Cell
+                      textStyle={styles.rowText}
+                      style={styles.nameColumn}
+                    >
                       {item.agentName}
                     </DataTable.Cell>
-                    <DataTable.Cell textStyle={styles.rowText} style={styles.idColumn}>
+                    <DataTable.Cell
+                      textStyle={styles.rowText}
+                      style={styles.idColumn}
+                    >
                       {item.agentId}
                     </DataTable.Cell>
-                    <DataTable.Cell numeric textStyle={styles.rowText} style={styles.dateColumn}>
+                    <DataTable.Cell
+                      numeric
+                      textStyle={styles.rowText}
+                      style={styles.dateColumn}
+                    >
                       {item.date}
                     </DataTable.Cell>
                     <DataTable.Cell style={styles.statusColumn}>
@@ -167,14 +212,18 @@ export default function ReportScreen() {
                           item.status === "Active"
                             ? styles.statusActive
                             : item.status === "Inactive"
-                              ? styles.statusInactive
-                              : styles.statusOnLeave,
+                            ? styles.statusInactive
+                            : styles.statusOnLeave,
                         ]}
                       >
                         <Text style={styles.statusPillText}>{item.status}</Text>
                       </View>
                     </DataTable.Cell>
-                    <DataTable.Cell numeric textStyle={styles.rowText} style={styles.salesColumn}>
+                    <DataTable.Cell
+                      numeric
+                      textStyle={styles.rowText}
+                      style={styles.salesColumn}
+                    >
                       ${item.totalSales.toLocaleString()}
                     </DataTable.Cell>
                   </DataTable.Row>
@@ -194,7 +243,8 @@ export default function ReportScreen() {
             </DataTable>
           </View>
         </ScrollView>
-      </ScrollView>
+      </Animated.ScrollView>
+      <AnimatedHeader title="Report" scrollY={scrollY} />
     </SafeAreaView>
   );
 }
@@ -202,6 +252,9 @@ export default function ReportScreen() {
 const createStyles = (palette: (typeof Colors)["light"]) =>
   StyleSheet.create({
     safeArea: {
+      flex: 1,
+    },
+    container: {
       flex: 1,
     },
     content: {
@@ -306,4 +359,3 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       color: palette.textPrimary,
     },
   });
-

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
-  ScrollView,
+  Animated,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,10 +10,11 @@ import {
 import { DataTable } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AnimatedHeader from "@/components/AnimatedHeader";
+import PageTitle from "@/components/PageTitle";
 import SearchField from "@/components/SearchField";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import PageTitle from "@/components/PageTitle";
 
 type TeamMember = {
   id: string;
@@ -125,10 +126,14 @@ export default function TeamMembersScreen() {
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const [query, setQuery] = useState("");
-  const [selectedSupervisor, setSelectedSupervisor] = useState("All Supervisors");
+  const [selectedSupervisor, setSelectedSupervisor] =
+    useState("All Supervisors");
   const [selectedTeam, setSelectedTeam] = useState("All Teams");
   const [page, setPage] = useState(0);
   const itemsPerPage = 8;
+
+  // 👇 Animated scroll tracking
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const teams = ["All Teams", "A", "B", "C", "QA"];
 
@@ -137,16 +142,26 @@ export default function TeamMembersScreen() {
       member.id.toLowerCase().includes(query.toLowerCase()) ||
       member.fullName.toLowerCase().includes(query.toLowerCase());
     const matchesSupervisor =
-      selectedSupervisor === "All Supervisors" || member.supervisor === selectedSupervisor;
-    const matchesTeam = selectedTeam === "All Teams" || member.team === selectedTeam;
+      selectedSupervisor === "All Supervisors" ||
+      member.supervisor === selectedSupervisor;
+    const matchesTeam =
+      selectedTeam === "All Teams" || member.team === selectedTeam;
     return matchesQuery && matchesSupervisor && matchesTeam;
   });
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <ScrollView
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: palette.background }]}
+    >
+      <Animated.ScrollView
+        style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
       >
         <PageTitle title="Team Members" />
         <Text style={styles.subtitle}>
@@ -167,12 +182,18 @@ export default function TeamMembersScreen() {
               style={styles.selectButton}
               onPress={() =>
                 setSelectedSupervisor((prev) =>
-                  prev === "All Supervisors" ? "Motunrayo Adelanwaa" : "All Supervisors"
+                  prev === "All Supervisors"
+                    ? "Motunrayo Adelanwaa"
+                    : "All Supervisors"
                 )
               }
             >
               <Text style={styles.selectButtonLabel}>{selectedSupervisor}</Text>
-              <Ionicons name="chevron-down" size={16} color={palette.textSecondary} />
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color={palette.textSecondary}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -186,7 +207,11 @@ export default function TeamMembersScreen() {
               }
             >
               <Text style={styles.selectButtonLabel}>{selectedTeam}</Text>
-              <Ionicons name="chevron-down" size={16} color={palette.textSecondary} />
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color={palette.textSecondary}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -196,7 +221,11 @@ export default function TeamMembersScreen() {
             <Text style={styles.metaLabel}>Showing</Text>
             <TouchableOpacity style={styles.pageSizeButton}>
               <Text style={styles.pageSizeValue}>{itemsPerPage}</Text>
-              <Ionicons name="chevron-down" size={14} color={palette.textSecondary} />
+              <Ionicons
+                name="chevron-down"
+                size={14}
+                color={palette.textSecondary}
+              />
             </TouchableOpacity>
             <Text style={styles.metaLabel}>
               of {filteredData.length.toString().padStart(2, "0")} Team Members
@@ -209,25 +238,46 @@ export default function TeamMembersScreen() {
 
         <DataTable style={styles.table}>
           <DataTable.Header>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.idColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.idColumn}
+            >
               Agent ID
             </DataTable.Title>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.nameColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.nameColumn}
+            >
               Full Name
             </DataTable.Title>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.emailColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.emailColumn}
+            >
               Email
             </DataTable.Title>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.phoneColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.phoneColumn}
+            >
               Phone No
             </DataTable.Title>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.roleColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.roleColumn}
+            >
               Role
             </DataTable.Title>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.supervisorColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.supervisorColumn}
+            >
               Supervisor
             </DataTable.Title>
-            <DataTable.Title textStyle={styles.columnLabel} style={styles.statusColumn}>
+            <DataTable.Title
+              textStyle={styles.columnLabel}
+              style={styles.statusColumn}
+            >
               Logged In Status
             </DataTable.Title>
           </DataTable.Header>
@@ -236,22 +286,40 @@ export default function TeamMembersScreen() {
             .slice(page * itemsPerPage, page * itemsPerPage + itemsPerPage)
             .map((member) => (
               <DataTable.Row key={member.id}>
-                <DataTable.Cell textStyle={styles.rowText} style={styles.idColumn}>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
+                  style={styles.idColumn}
+                >
                   {member.id}
                 </DataTable.Cell>
-                <DataTable.Cell textStyle={styles.rowText} style={styles.nameColumn}>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
+                  style={styles.nameColumn}
+                >
                   {member.fullName}
                 </DataTable.Cell>
-                <DataTable.Cell textStyle={styles.rowText} style={styles.emailColumn}>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
+                  style={styles.emailColumn}
+                >
                   {member.email}
                 </DataTable.Cell>
-                <DataTable.Cell textStyle={styles.rowText} style={styles.phoneColumn}>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
+                  style={styles.phoneColumn}
+                >
                   {member.phone}
                 </DataTable.Cell>
-                <DataTable.Cell textStyle={styles.rowText} style={styles.roleColumn}>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
+                  style={styles.roleColumn}
+                >
                   {member.role}
                 </DataTable.Cell>
-                <DataTable.Cell textStyle={styles.rowText} style={styles.supervisorColumn}>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
+                  style={styles.supervisorColumn}
+                >
                   {member.supervisor}
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.statusColumn}>
@@ -281,7 +349,8 @@ export default function TeamMembersScreen() {
             numberOfItemsPerPage={itemsPerPage}
           />
         </DataTable>
-      </ScrollView>
+      </Animated.ScrollView>
+      <AnimatedHeader title="Team Members" scrollY={scrollY} />
     </SafeAreaView>
   );
 }
@@ -289,6 +358,9 @@ export default function TeamMembersScreen() {
 const createStyles = (palette: (typeof Colors)["light"]) =>
   StyleSheet.create({
     safeArea: {
+      flex: 1,
+    },
+    container: {
       flex: 1,
     },
     content: {

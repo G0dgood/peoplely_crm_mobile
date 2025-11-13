@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ScrollView,
+  Animated,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AnimatedHeader from "@/components/AnimatedHeader";
 import TextField from "@/components/forms/TextField";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -22,14 +23,34 @@ const TABS = [
 const PROFILE_FIELDS = [
   { key: "fullName", label: "Full Name", placeholder: "Enter full name" },
   { key: "username", label: "Username", placeholder: "Enter username" },
-  { key: "phoneNumber", label: "Phone Number", placeholder: "Enter phone number" },
-  { key: "emailAddress", label: "Email Address", placeholder: "Enter email address" },
+  {
+    key: "phoneNumber",
+    label: "Phone Number",
+    placeholder: "Enter phone number",
+  },
+  {
+    key: "emailAddress",
+    label: "Email Address",
+    placeholder: "Enter email address",
+  },
 ];
 
 const PASSWORD_FIELDS = [
-  { key: "currentPassword", label: "Current Password", placeholder: "Enter current password" },
-  { key: "newPassword", label: "New Password", placeholder: "Enter new password" },
-  { key: "confirmPassword", label: "Confirm New Password", placeholder: "Re-enter new password" },
+  {
+    key: "currentPassword",
+    label: "Current Password",
+    placeholder: "Enter current password",
+  },
+  {
+    key: "newPassword",
+    label: "New Password",
+    placeholder: "Enter new password",
+  },
+  {
+    key: "confirmPassword",
+    label: "Confirm New Password",
+    placeholder: "Re-enter new password",
+  },
 ];
 
 const PROFILE_COPY =
@@ -39,7 +60,12 @@ export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
 
-  const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences">("profile");
+  // 👇 Animated scroll tracking
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "password" | "preferences"
+  >("profile");
   const [isEditing, setIsEditing] = useState(false);
   const [profileValues, setProfileValues] = useState({
     fullName: "Jane Doe",
@@ -109,19 +135,27 @@ export default function SettingsScreen() {
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Full Name:</Text>
-            <Text style={styles.summaryValue}>{profileValues.fullName || "Not set"}</Text>
+            <Text style={styles.summaryValue}>
+              {profileValues.fullName || "Not set"}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Username:</Text>
-            <Text style={styles.summaryValue}>{profileValues.username || "Not set"}</Text>
+            <Text style={styles.summaryValue}>
+              {profileValues.username || "Not set"}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Phone:</Text>
-            <Text style={styles.summaryValue}>{profileValues.phoneNumber || "Not set"}</Text>
+            <Text style={styles.summaryValue}>
+              {profileValues.phoneNumber || "Not set"}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Email:</Text>
-            <Text style={styles.summaryValue}>{profileValues.emailAddress || "Not set"}</Text>
+            <Text style={styles.summaryValue}>
+              {profileValues.emailAddress || "Not set"}
+            </Text>
           </View>
         </View>
       </View>
@@ -160,8 +194,10 @@ export default function SettingsScreen() {
 
       <View style={styles.formStack}>
         {PASSWORD_FIELDS.map((field) => {
-          const value = passwordValues[field.key as keyof typeof passwordValues];
-          const visible = passwordVisibility[field.key as keyof typeof passwordVisibility];
+          const value =
+            passwordValues[field.key as keyof typeof passwordValues];
+          const visible =
+            passwordVisibility[field.key as keyof typeof passwordVisibility];
           return (
             <TextField
               key={field.key}
@@ -182,7 +218,9 @@ export default function SettingsScreen() {
                 />
               }
               onPressTrailingIcon={() =>
-                togglePasswordVisibility(field.key as keyof typeof passwordVisibility)
+                togglePasswordVisibility(
+                  field.key as keyof typeof passwordVisibility
+                )
               }
             />
           );
@@ -215,8 +253,15 @@ export default function SettingsScreen() {
           <Text style={styles.preferenceSubtitle}>Switch to dark mode</Text>
         </View>
         <View style={styles.preferenceSwitch}>
-          <View style={[styles.switchTrack, { backgroundColor: palette.offWhite2 }]}>
-            <View style={[styles.switchThumb, { backgroundColor: palette.accentWhite }]} />
+          <View
+            style={[styles.switchTrack, { backgroundColor: palette.offWhite2 }]}
+          >
+            <View
+              style={[
+                styles.switchThumb,
+                { backgroundColor: palette.accentWhite },
+              ]}
+            />
           </View>
         </View>
       </TouchableOpacity>
@@ -228,10 +273,16 @@ export default function SettingsScreen() {
       style={[styles.safeArea, { backgroundColor: palette.background }]}
       edges={["top", "left", "right"]}
     >
-      <ScrollView
+      {/* Scrollable content */}
+      <Animated.ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
       >
         <Text style={styles.pageTitle}>Account Settings</Text>
         <Text style={styles.pageSubtitle}>
@@ -245,10 +296,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 key={tab.id}
                 onPress={() => setActiveTab(tab.id as typeof activeTab)}
-                style={[
-                  styles.tabButton,
-                  isActive && styles.tabButtonActive,
-                ]}
+                style={[styles.tabButton, isActive && styles.tabButtonActive]}
                 activeOpacity={0.8}
               >
                 <Ionicons
@@ -259,7 +307,9 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.tabLabel,
-                    { color: isActive ? palette.primary : palette.textSecondary },
+                    {
+                      color: isActive ? palette.primary : palette.textSecondary,
+                    },
                   ]}
                 >
                   {tab.label}
@@ -272,14 +322,14 @@ export default function SettingsScreen() {
         {activeTab === "profile" && renderProfileTab()}
         {activeTab === "password" && renderPasswordTab()}
         {activeTab === "preferences" && renderPreferencesTab()}
-      </ScrollView>
+      </Animated.ScrollView>
+      <AnimatedHeader title="Account Settings" scrollY={scrollY} />
     </SafeAreaView>
   );
 }
 
 const createStyles = (palette: (typeof Colors)["light"]) =>
   StyleSheet.create({
-
     sectionHeaderContent: {
       width: "60%",
     },

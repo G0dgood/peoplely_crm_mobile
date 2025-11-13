@@ -1,13 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { forwardRef, useMemo } from "react";
 import {
+  StyleProp,
   StyleSheet,
   TextInput,
   TextInputProps,
   View,
-  StyleProp,
   ViewStyle,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -24,7 +24,11 @@ const SearchField = forwardRef<TextInput, SearchFieldProps>(
 
     return (
       <View style={[styles.container, containerStyle]}>
-        <Ionicons name="search-outline" size={18} color={palette.primaryLighter} />
+        <Ionicons
+          name="search-outline"
+          size={18}
+          color={palette.primaryLighter}
+        />
         <TextInput
           ref={ref}
           style={[styles.input, style]}
@@ -41,11 +45,12 @@ SearchField.displayName = "SearchField";
 const createStyles = (palette: (typeof Colors)["light"]) =>
   StyleSheet.create({
     container: {
+      height: 50,
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 2,
       backgroundColor: palette.accentWhite,
       shadowColor: "#000",
       shadowOpacity: 0.05,
@@ -61,4 +66,3 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
   });
 
 export default SearchField;
-
