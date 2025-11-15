@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
 import React from "react";
 
@@ -49,6 +50,11 @@ export default function TabLayout() {
             <Ionicons name={TAB_ICONS.index} color={color} size={20} />
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
+        }}
       />
       <Tabs.Screen
         name="customer-book"
@@ -62,6 +68,11 @@ export default function TabLayout() {
               size={20}
             />
           ),
+        }}
+        listeners={{
+          tabPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
         }}
       />
       <Tabs.Screen
@@ -77,6 +88,11 @@ export default function TabLayout() {
             />
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
+        }}
       />
       <Tabs.Screen
         name="report"
@@ -87,15 +103,25 @@ export default function TabLayout() {
             <Ionicons name={TAB_ICONS.report} color={color} size={20} />
           ),
         }}
+        listeners={{
+          tabPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
+        }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Account Settings",
+          title: "Account",
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name={TAB_ICONS.settings} color={color} size={20} />
           ),
+        }}
+        listeners={{
+          tabPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
         }}
       />
     </Tabs>

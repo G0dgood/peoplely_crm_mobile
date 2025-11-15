@@ -8,7 +8,7 @@ import {
 import {
   DarkTheme,
   DefaultTheme,
-  ThemeProvider,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -18,7 +18,17 @@ import { Text, TextInput } from "react-native";
 import { Provider as PaperProvider } from "react-native-paper";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Provider } from "react-redux";
+
+import NetworkStatusBanner from "@/components/NetworkStatusBanner";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PrivilegeProvider } from "@/contexts/PrivilegeContext";
+import { SocketProvider } from "@/contexts/SocketContext";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { useNetworkMonitor } from "@/hooks/useNetworkMonitor";
+import { store } from "@/store";
+import { syncPendingDispositions } from "@/utils/dispositionStorage";
+import NetInfo from "@react-native-community/netinfo";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -59,8 +69,8 @@ const applyGlobalFontFamily = () => {
   hasAppliedGlobalFont = true;
 };
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function AppContent() {
+  const { resolvedColorScheme, isLoading: themeLoading } = useTheme();
   const [fontsLoaded] = useFonts({
     "Poppins-Regular": Poppins_400Regular,
     "Poppins-Medium": Poppins_500Medium,
@@ -68,20 +78,47 @@ export default function RootLayout() {
     "Poppins-Bold": Poppins_700Bold,
   });
 
+  // Monitor network status
+  useNetworkMonitor();
+
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded && !themeLoading) {
       applyGlobalFontFamily();
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, themeLoading]);
 
-  if (!fontsLoaded) {
+  // Global sync mechanism for offline dispositions
+  useEffect(() => {
+    // Initial sync check
+    NetInfo.fetch().then((state) => {
+      if (state.isConnected) {
+        syncPendingDispositions();
+      }
+    });
+
+    // Monitor network and sync when online
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected) {
+        syncPendingDispositions();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  if (!fontsLoaded || themeLoading) {
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider
+      value={resolvedColorScheme === "dark" ? DarkTheme : DefaultTheme}
+    >
       <PaperProvider>
+        <NetworkStatusBanner />
         <Stack>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="auth/login" options={{ headerShown: false }} />
@@ -106,6 +143,22 @@ export default function RootLayout() {
         </Stack>
         <StatusBar style="auto" />
       </PaperProvider>
-    </ThemeProvider>
+    </NavigationThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <AuthProvider>
+        <PrivilegeProvider>
+          <ThemeProvider>
+            <SocketProvider>
+              <AppContent />
+            </SocketProvider>
+          </ThemeProvider>
+        </PrivilegeProvider>
+      </AuthProvider>
+    </Provider>
   );
 }

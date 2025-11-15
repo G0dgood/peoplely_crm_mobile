@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useRef, useState } from "react";
+import * as Haptics from "expo-haptics";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -123,19 +126,29 @@ const TEAM_MEMBERS: TeamMember[] = [
 export default function TeamMembersScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
-  const styles = useMemo(() => createStyles(palette), [palette]);
+  const styles = useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
 
   const [query, setQuery] = useState("");
   const [selectedSupervisor, setSelectedSupervisor] =
     useState("All Supervisors");
   const [selectedTeam, setSelectedTeam] = useState("All Teams");
   const [page, setPage] = useState(0);
-  const itemsPerPage = 8;
+  const [numberOfItemsPerPageList] = useState([5, 10, 15, 40]);
+  const [itemsPerPage, onItemsPerPageChange] = useState(
+    numberOfItemsPerPageList[0]
+  );
+  const [showSupervisorModal, setShowSupervisorModal] = useState(false);
 
-  // 👇 Animated scroll tracking
+  //  Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const teams = ["All Teams", "A", "B", "C", "QA"];
+
+  // Extract all unique supervisors from the data
+  const allSupervisors = useMemo(() => {
+    const supervisors = new Set(TEAM_MEMBERS.map((member) => member.supervisor));
+    return ["All Supervisors", ...Array.from(supervisors).sort()];
+  }, []);
 
   const filteredData = TEAM_MEMBERS.filter((member) => {
     const matchesQuery =
@@ -148,6 +161,15 @@ export default function TeamMembersScreen() {
       selectedTeam === "All Teams" || member.team === selectedTeam;
     return matchesQuery && matchesSupervisor && matchesTeam;
   });
+
+  const from = page * itemsPerPage;
+  const to = Math.min((page + 1) * itemsPerPage, filteredData.length);
+  const paginated = filteredData.slice(from, to);
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+
+  useEffect(() => {
+    setPage(0);
+  }, [query, itemsPerPage, selectedSupervisor, selectedTeam]);
 
   return (
     <SafeAreaView
@@ -180,13 +202,10 @@ export default function TeamMembersScreen() {
           <View style={styles.filterSelectors}>
             <TouchableOpacity
               style={styles.selectButton}
-              onPress={() =>
-                setSelectedSupervisor((prev) =>
-                  prev === "All Supervisors"
-                    ? "Motunrayo Adelanwaa"
-                    : "All Supervisors"
-                )
-              }
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowSupervisorModal(true);
+              }}
             >
               <Text style={styles.selectButtonLabel}>{selectedSupervisor}</Text>
               <Ionicons
@@ -216,76 +235,58 @@ export default function TeamMembersScreen() {
           </View>
         </View>
 
-        <View style={styles.tableMeta}>
-          <View style={styles.showing}>
-            <Text style={styles.metaLabel}>Showing</Text>
-            <TouchableOpacity style={styles.pageSizeButton}>
-              <Text style={styles.pageSizeValue}>{itemsPerPage}</Text>
-              <Ionicons
-                name="chevron-down"
-                size={14}
-                color={palette.textSecondary}
-              />
-            </TouchableOpacity>
-            <Text style={styles.metaLabel}>
-              of {filteredData.length.toString().padStart(2, "0")} Team Members
-            </Text>
-          </View>
-          <Text style={styles.metaLabel}>
-            Total of {filteredData.length} Team Members
-          </Text>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+          <DataTable style={[styles.table, { minWidth: 1000 }]}>
+            <DataTable.Header>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.idColumn}
+              >
+                Agent ID
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.nameColumn}
+              >
+                Full Name
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.emailColumn}
+              >
+                Email
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.phoneColumn}
+              >
+                Phone No
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.roleColumn}
+              >
+                Role
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.supervisorColumn}
+              >
+                Supervisor
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.statusColumn}
+              >
+                Logged In Status
+              </DataTable.Title>
+            </DataTable.Header>
 
-        <DataTable style={styles.table}>
-          <DataTable.Header>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.idColumn}
-            >
-              Agent ID
-            </DataTable.Title>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.nameColumn}
-            >
-              Full Name
-            </DataTable.Title>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.emailColumn}
-            >
-              Email
-            </DataTable.Title>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.phoneColumn}
-            >
-              Phone No
-            </DataTable.Title>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.roleColumn}
-            >
-              Role
-            </DataTable.Title>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.supervisorColumn}
-            >
-              Supervisor
-            </DataTable.Title>
-            <DataTable.Title
-              textStyle={styles.columnLabel}
-              style={styles.statusColumn}
-            >
-              Logged In Status
-            </DataTable.Title>
-          </DataTable.Header>
-
-          {filteredData
-            .slice(page * itemsPerPage, page * itemsPerPage + itemsPerPage)
-            .map((member) => (
-              <DataTable.Row key={member.id}>
+            {paginated.map((member) => (
+              <DataTable.Row
+                key={member.id}
+                style={{ borderBottomWidth: 1, borderBottomColor: palette.mediumGray }}
+              >
                 <DataTable.Cell
                   textStyle={styles.rowText}
                   style={styles.idColumn}
@@ -331,31 +332,124 @@ export default function TeamMembersScreen() {
                         : styles.statusLoggedOut,
                     ]}
                   >
-                    <Text style={styles.statusPillText}>{member.status}</Text>
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        member.status === "Logged In"
+                          ? styles.statusPillTextLoggedIn
+                          : styles.statusPillTextLoggedOut,
+                      ]}
+                    >
+                      {member.status}
+                    </Text>
                   </View>
                 </DataTable.Cell>
               </DataTable.Row>
             ))}
 
-          <DataTable.Pagination
-            page={page}
-            numberOfPages={Math.ceil(filteredData.length / itemsPerPage)}
-            onPageChange={setPage}
-            label={`${page * itemsPerPage + 1}-${Math.min(
-              (page + 1) * itemsPerPage,
-              filteredData.length
-            )} of ${filteredData.length}`}
-            showFastPaginationControls
-            numberOfItemsPerPage={itemsPerPage}
-          />
-        </DataTable>
+          </DataTable>
+        </ScrollView>
+
+        <DataTable.Pagination
+          page={page}
+          numberOfPages={totalPages}
+          onPageChange={(page) => setPage(page)}
+          label={`${from + 1}-${to} of ${filteredData.length}`}
+          numberOfItemsPerPageList={numberOfItemsPerPageList}
+          numberOfItemsPerPage={itemsPerPage}
+          onItemsPerPageChange={onItemsPerPageChange}
+          showFastPaginationControls
+          selectPageDropdownLabel={"Rows per page"}
+          theme={{
+            roundness: 0,
+            colors: {
+              primary: palette.interactivePrimary,
+              text: palette.textPrimary,
+              placeholder: palette.textSecondary,
+              backdrop: colorScheme === "dark" ? palette.background : palette.accentWhite,
+              surface: colorScheme === "dark" ? palette.bgPrimary : palette.accentWhite,
+              onSurface: palette.textPrimary,
+            },
+          }}
+        />
       </Animated.ScrollView>
       <AnimatedHeader title="Team Members" scrollY={scrollY} />
+
+      {/* Supervisor Dropdown Modal */}
+      <Modal
+        visible={showSupervisorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSupervisorModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSupervisorModal(false)}
+        >
+          <TouchableOpacity
+            style={[styles.modalContent, { backgroundColor: palette.accentWhite }]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>
+                Select Supervisor
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowSupervisorModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={palette.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+              {allSupervisors.map((supervisor) => (
+                <TouchableOpacity
+                  key={supervisor}
+                  style={[
+                    styles.modalOption,
+                    selectedSupervisor === supervisor && { backgroundColor: palette.offWhite2 },
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedSupervisor(supervisor);
+                    setShowSupervisorModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      {
+                        color:
+                          selectedSupervisor === supervisor
+                            ? palette.interactivePrimary
+                            : palette.textPrimary,
+                        fontWeight: selectedSupervisor === supervisor ? "600" : "400",
+                      },
+                    ]}
+                  >
+                    {supervisor}
+                  </Text>
+                  {selectedSupervisor === supervisor && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={palette.interactivePrimary}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"]) =>
+const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -424,18 +518,6 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       fontSize: 13,
       color: palette.textSecondary,
     },
-    pageSizeButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: palette.accentWhite,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    pageSizeValue: {
-      fontWeight: "600",
-      color: palette.textPrimary,
-    },
     table: {
       backgroundColor: palette.accentWhite,
       shadowColor: "#000",
@@ -443,6 +525,10 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       shadowOffset: { width: 0, height: 8 },
       shadowRadius: 16,
       elevation: 2,
+      borderRadius: 0,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: palette.mediumGray,
     },
     columnLabel: {
       fontSize: 12,
@@ -450,48 +536,120 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       textTransform: "uppercase",
       color: palette.textSecondary,
       letterSpacing: 0.5,
+      paddingHorizontal: 8,
     },
     rowText: {
       fontSize: 14,
       color: palette.textPrimary,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
     },
     idColumn: {
       flex: 1.2,
+      minWidth: 120,
+      paddingHorizontal: 8,
     },
     nameColumn: {
       flex: 1.8,
+      minWidth: 150,
+      paddingHorizontal: 8,
     },
     emailColumn: {
       flex: 2,
+      minWidth: 200,
+      paddingHorizontal: 8,
     },
     phoneColumn: {
       flex: 1,
+      minWidth: 100,
+      paddingHorizontal: 8,
     },
     roleColumn: {
       flex: 1,
+      minWidth: 80,
+      paddingHorizontal: 8,
     },
     supervisorColumn: {
       flex: 1.5,
+      minWidth: 150,
+      paddingHorizontal: 8,
     },
     statusColumn: {
       flex: 1.1,
+      minWidth: 120,
       justifyContent: "center",
+      paddingHorizontal: 8,
     },
     statusPill: {
       paddingHorizontal: 12,
       paddingVertical: 6,
       alignItems: "center",
       justifyContent: "center",
+      borderWidth: 1,
     },
     statusLoggedIn: {
-      backgroundColor: "#DCFCE7",
+      backgroundColor: colorScheme === "dark"
+        ? "rgba(108, 139, 125, 0.2)"
+        : "rgba(108, 139, 125, 0.1)",
+      borderColor: palette.statusSuccess,
     },
     statusLoggedOut: {
-      backgroundColor: "#FFE4E6",
+      backgroundColor: colorScheme === "dark"
+        ? "rgba(220, 53, 69, 0.2)"
+        : "rgba(220, 53, 69, 0.1)",
+      borderColor: palette.statusError,
     },
     statusPillText: {
       fontSize: 12,
       fontWeight: "600",
-      color: palette.textPrimary,
+    },
+    statusPillTextLoggedIn: {
+      color: palette.statusSuccess,
+    },
+    statusPillTextLoggedOut: {
+      color: palette.statusError,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    modalContent: {
+      width: "100%",
+      maxWidth: 400,
+      maxHeight: "80%",
+      borderRadius: 0,
+      padding: 24,
+      gap: 16,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    modalCloseButton: {
+      padding: 4,
+    },
+    modalList: {
+      maxHeight: 300,
+    },
+    modalOption: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 14,
+      paddingHorizontal: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: palette.mediumGray,
+    },
+    modalOptionText: {
+      fontSize: 15,
     },
   });

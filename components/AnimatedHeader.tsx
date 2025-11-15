@@ -1,6 +1,8 @@
 // components/AnimatedHeader.tsx
 import React from "react";
 import { Animated, StyleSheet, ViewStyle } from "react-native";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface AnimatedHeaderProps {
   title: string;
@@ -14,11 +16,16 @@ interface AnimatedHeaderProps {
 export default function AnimatedHeader({
   title,
   scrollY,
-  backgroundColor = "#fff",
-  textColor = "#000",
+  backgroundColor,
+  textColor,
   inputRange = [40, 120],
   style,
 }: AnimatedHeaderProps) {
+  const colorScheme = useColorScheme() ?? "light";
+  const palette = Colors[colorScheme];
+  
+  const defaultBackgroundColor = backgroundColor ?? palette.background;
+  const defaultTextColor = textColor ?? palette.textPrimary;
   // Interpolations for header animation
   const headerOpacity = scrollY.interpolate({
     inputRange: [40, 120],
@@ -36,12 +43,16 @@ export default function AnimatedHeader({
     <Animated.View
       style={[
         styles.header,
-        { backgroundColor, opacity: headerOpacity }, // header is always visible
+        { 
+          backgroundColor: defaultBackgroundColor, 
+          opacity: headerOpacity,
+          borderBottomColor: palette.mediumGray,
+        }, // header is always visible
         style,
       ]}
     >
       <Animated.Text
-        style={[styles.title, { color: textColor, opacity: titleOpacity }]}
+        style={[styles.title, { color: defaultTextColor, opacity: titleOpacity }]}
       >
         {title}
       </Animated.Text>
@@ -61,7 +72,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 50,
     borderBottomWidth: 0.5,
-    borderColor: "#ddd",
   },
   title: {
     fontSize: 18,

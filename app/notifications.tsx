@@ -1,13 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import React, { useRef } from "react";
 import {
+  Animated,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AnimatedHeader from "@/components/AnimatedHeader";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -93,12 +98,38 @@ const NOTIFICATIONS: NotificationSection[] = [
 export default function NotificationsScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
-  const styles = React.useMemo(() => createStyles(palette), [palette]);
+  const styles = React.useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
+  
+  // 👇 Animated scroll tracking
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
+      <Animated.ScrollView 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={handleBack}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color={palette.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Notifications</Text>
+          <View style={styles.headerButton} />
+        </View>
 
         {NOTIFICATIONS.map((section) => (
           <View key={section.title}>
@@ -130,12 +161,13 @@ export default function NotificationsScreen() {
             </View>
           </View>
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
+      <AnimatedHeader title="Notifications" scrollY={scrollY} />
     </SafeAreaView>
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"]) =>
+const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -154,10 +186,12 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     headerButton: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: 0,
       backgroundColor: palette.bgSecondary,
       justifyContent: "center",
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: palette.mediumGray,
     },
     title: {
       fontSize: 20,
@@ -198,7 +232,7 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     iconWrap: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: 0,
       justifyContent: "center",
       alignItems: "center",
     },

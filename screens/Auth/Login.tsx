@@ -165,10 +165,12 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     },
     signInButton: {
       height: 52,
-      backgroundColor: palette.primary,
+      backgroundColor: palette.interactivePrimary,
       justifyContent: "center",
       alignItems: "center",
       marginTop: 12,
+      borderWidth: 1,
+      borderColor: palette.interactivePrimary,
       shadowColor: palette.shadowColor,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.2,

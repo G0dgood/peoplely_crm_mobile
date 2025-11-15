@@ -617,7 +617,10 @@ export default function CustomerBookScreen() {
               </DataTable.Title>
             </DataTable.Header>
             {paginated.map((customer) => (
-              <DataTable.Row key={customer.id}>
+              <DataTable.Row
+                key={customer.id}
+                style={{ borderBottomWidth: 1, borderBottomColor: palette.mediumGray }}
+              >
                 <DataTable.Cell textStyle={styles.rowText}>
                   {customer.firstName}
                 </DataTable.Cell>
@@ -656,7 +659,10 @@ export default function CustomerBookScreen() {
                 </DataTable.Title>
               </DataTable.Header>
               {paginated.map((customer) => (
-                <DataTable.Row key={customer.id}>
+                <DataTable.Row
+                  key={customer.id}
+                  style={{ borderBottomWidth: 1, borderBottomColor: palette.mediumGray }}
+                >
                   <DataTable.Cell
                     textStyle={styles.rowText}
                     style={styles.nameColumn}
@@ -704,7 +710,17 @@ export default function CustomerBookScreen() {
           onItemsPerPageChange={onItemsPerPageChange}
           showFastPaginationControls
           selectPageDropdownLabel={"Rows per page"}
-          theme={{ roundness: 0 }}
+          theme={{
+            roundness: 0,
+            colors: {
+              primary: palette.interactivePrimary,
+              text: palette.textPrimary,
+              placeholder: palette.textSecondary,
+              backdrop: colorScheme === "dark" ? palette.background : palette.accentWhite,
+              surface: colorScheme === "dark" ? palette.bgPrimary : palette.accentWhite,
+              onSurface: palette.textPrimary,
+            },
+          }}
         />
       </Animated.ScrollView>
 
@@ -738,7 +754,9 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       gap: 6,
       paddingHorizontal: 18,
       paddingVertical: 12,
-      backgroundColor: palette.primary,
+      backgroundColor: palette.interactivePrimary,
+      borderWidth: 1,
+      borderColor: palette.interactivePrimary,
     },
     importButtonText: { color: palette.textInverse, fontWeight: "600" },
     table: {
@@ -750,6 +768,8 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       elevation: 2,
       borderRadius: 0,
       overflow: "hidden",
+      borderWidth: 1,
+      borderColor: palette.mediumGray,
     },
     rowText: {
       fontSize: 14,
@@ -780,6 +800,8 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: palette.offWhite2,
-      borderRadius: 20,
+      borderRadius: 0,
+      borderWidth: 1,
+      borderColor: palette.mediumGray,
     },
   });

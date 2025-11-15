@@ -1,6 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   StyleSheet,
   Text,
@@ -12,6 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AnimatedHeader from "@/components/AnimatedHeader";
 import TextField from "@/components/forms/TextField";
 import { Colors } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const TABS = [
@@ -59,6 +64,9 @@ const PROFILE_COPY =
 export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
+  const { resolvedColorScheme, toggleDarkMode } = useTheme();
+  const isDarkMode = resolvedColorScheme === "dark";
+  const { signOut } = useAuth();
 
   // 👇 Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -84,7 +92,7 @@ export default function SettingsScreen() {
     confirmPassword: false,
   });
 
-  const styles = useMemo(() => createStyles(palette), [palette]);
+  const styles = useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
 
   useEffect(() => {
     if (activeTab !== "profile" && isEditing) {
@@ -97,6 +105,28 @@ export default function SettingsScreen() {
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await signOut();
+            router.replace("/auth/login");
+          },
+        },
+      ]
+    );
   };
 
   const renderProfileTab = () => (
@@ -114,7 +144,7 @@ export default function SettingsScreen() {
             isEditing && {
               backgroundColor: "transparent",
               borderWidth: 1,
-              borderColor: palette.primary,
+              borderColor: palette.interactivePrimary,
             },
           ]}
           onPress={() => setIsEditing((prev) => !prev)}
@@ -122,7 +152,7 @@ export default function SettingsScreen() {
           <Text
             style={[
               styles.editButtonText,
-              isEditing && { color: palette.primary },
+              isEditing && { color: palette.interactivePrimary },
             ]}
           >
             {isEditing ? "Done" : "Edit Profile"}
@@ -244,26 +274,73 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.preferenceRow} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.preferenceRow}
+        activeOpacity={0.8}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          toggleDarkMode();
+        }}
+      >
         <View style={styles.preferenceIcon}>
           <Ionicons name="moon-outline" size={20} color={palette.textPrimary} />
         </View>
         <View style={styles.preferenceContent}>
           <Text style={styles.preferenceTitle}>Dark Mode</Text>
-          <Text style={styles.preferenceSubtitle}>Switch to dark mode</Text>
+          <Text style={styles.preferenceSubtitle}>
+            {isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          </Text>
         </View>
         <View style={styles.preferenceSwitch}>
           <View
-            style={[styles.switchTrack, { backgroundColor: palette.offWhite2 }]}
+            style={[
+              styles.switchTrack,
+              {
+                backgroundColor: isDarkMode
+                  ? palette.interactivePrimary
+                  : palette.offWhite2,
+                borderWidth: isDarkMode ? 0 : 1,
+                borderColor: isDarkMode ? "transparent" : palette.mediumGray,
+              },
+            ]}
           >
             <View
               style={[
                 styles.switchThumb,
-                { backgroundColor: palette.accentWhite },
+                {
+                  backgroundColor: palette.accentWhite,
+                  alignSelf: isDarkMode ? "flex-end" : "flex-start",
+                },
               ]}
             />
           </View>
         </View>
+      </TouchableOpacity>
+
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionSubtitle}>
+            Manage your account settings.
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.logoutRow}
+        activeOpacity={0.8}
+        onPress={handleLogout}
+      >
+        <View style={styles.logoutIcon}>
+          <Ionicons name="log-out-outline" size={20} color={palette.statusError} />
+        </View>
+        <View style={styles.preferenceContent}>
+          <Text style={styles.logoutTitle}>Logout</Text>
+          <Text style={styles.preferenceSubtitle}>
+            Sign out of your account
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={palette.textSecondary} />
       </TouchableOpacity>
     </View>
   );
@@ -328,7 +405,7 @@ export default function SettingsScreen() {
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"]) =>
+const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
   StyleSheet.create({
     sectionHeaderContent: {
       width: "60%",
@@ -404,10 +481,13 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       flexWrap: "wrap",
     },
     editButton: {
-      backgroundColor: palette.primary,
+      backgroundColor: palette.interactivePrimary,
       paddingHorizontal: 18,
       paddingVertical: 10,
       flexShrink: 0,
+      borderWidth: 1,
+      borderColor: palette.interactivePrimary,
+      borderRadius: 0,
     },
     editButtonText: {
       color: palette.textInverse,
@@ -473,9 +553,12 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       gap: 18,
     },
     passwordButton: {
-      backgroundColor: palette.primary,
+      backgroundColor: palette.interactivePrimary,
       paddingVertical: 14,
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: palette.interactivePrimary,
+      borderRadius: 0,
     },
     passwordButtonText: {
       color: palette.textInverse,
@@ -498,6 +581,8 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       backgroundColor: palette.offWhite2,
       padding: 18,
       gap: 16,
+      borderWidth: 1,
+      borderColor: palette.mediumGray,
     },
     preferenceIcon: {
       width: 44,
@@ -535,5 +620,30 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       height: 18,
       borderRadius: 9,
       alignSelf: "flex-start",
+    },
+    logoutRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: palette.offWhite2,
+      padding: 18,
+      gap: 16,
+      borderWidth: 1,
+      borderColor: palette.mediumGray,
+    },
+    logoutIcon: {
+      width: 44,
+      height: 44,
+      backgroundColor: palette.accentWhite,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colorScheme === "dark" 
+        ? "rgba(220, 53, 69, 0.3)" 
+        : "rgba(220, 53, 69, 0.2)",
+    },
+    logoutTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: palette.statusError,
     },
   });

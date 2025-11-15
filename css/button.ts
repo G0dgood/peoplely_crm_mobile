@@ -8,7 +8,7 @@ export const button = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
     width: "100%",
-    borderRadius: 10,
+    borderRadius: 0,
     backgroundColor: colors.accent_green,
     justifyContent: "center",
     alignItems: "center",
