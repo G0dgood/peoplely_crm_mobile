@@ -4,11 +4,10 @@ import { router } from "expo-router";
 import React, { useRef } from "react";
 import {
   Animated,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -98,8 +97,11 @@ const NOTIFICATIONS: NotificationSection[] = [
 export default function NotificationsScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
-  const styles = React.useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
-  
+  const styles = React.useMemo(
+    () => createStyles(palette, colorScheme),
+    [palette, colorScheme]
+  );
+
   // 👇 Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -109,9 +111,11 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <Animated.ScrollView 
-        contentContainerStyle={styles.content} 
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: palette.background }]}
+    >
+      <Animated.ScrollView
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={Animated.event(
@@ -120,7 +124,7 @@ export default function NotificationsScreen() {
         )}
       >
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.headerButton}
             onPress={handleBack}
             activeOpacity={0.7}
@@ -128,7 +132,7 @@ export default function NotificationsScreen() {
             <Ionicons name="arrow-back" size={20} color={palette.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.title}>Notifications</Text>
-          <View style={styles.headerButton} />
+          <View style={styles.headerButton2} />
         </View>
 
         {NOTIFICATIONS.map((section) => (
@@ -143,14 +147,22 @@ export default function NotificationsScreen() {
                     index < section.items.length - 1 && styles.cardDivider,
                   ]}
                 >
-                  <View style={[styles.iconWrap, { backgroundColor: item.iconBg }]}>
-                    <Ionicons name={item.icon} size={20} color={palette.interactiveSecondary} />
+                  <View
+                    style={[styles.iconWrap, { backgroundColor: item.iconBg }]}
+                  >
+                    <Ionicons
+                      name={item.icon}
+                      size={20}
+                      color={palette.interactiveSecondary}
+                    />
                   </View>
                   <View style={styles.cardBody}>
                     <Text style={styles.cardMessage}>
                       {item.message}
                       {item.highlight ? (
-                        <Text style={styles.cardHighlight}>{item.highlight}</Text>
+                        <Text style={styles.cardHighlight}>
+                          {item.highlight}
+                        </Text>
                       ) : null}
                       {item.suffix ? item.suffix : ""}
                     </Text>
@@ -167,7 +179,10 @@ export default function NotificationsScreen() {
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
+const createStyles = (
+  palette: (typeof Colors)["light"],
+  colorScheme: "light" | "dark"
+) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -192,6 +207,10 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
       alignItems: "center",
       borderWidth: 1,
       borderColor: palette.mediumGray,
+    },
+    headerButton2: {
+      width: 40,
+      height: 40,
     },
     title: {
       fontSize: 20,
@@ -256,4 +275,3 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
       letterSpacing: 1,
     },
   });
-

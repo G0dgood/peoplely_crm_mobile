@@ -83,7 +83,10 @@ const REPORT_DATA: AgentReport[] = [
 export default function ReportScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
-  const styles = useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
+  const styles = useMemo(
+    () => createStyles(palette, colorScheme),
+    [palette, colorScheme]
+  );
 
   // 👇 Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -134,8 +137,15 @@ export default function ReportScreen() {
       >
         <PageTitle title="Report" />
 
+        <SearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search"
+          autoCorrect={false}
+        />
+
         <View style={styles.actionsRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.filterButton}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -149,122 +159,112 @@ export default function ReportScreen() {
             />
             <Text style={styles.filterButtonText}>Filter Report</Text>
           </TouchableOpacity>
-          {/* <SearchField
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search"
-            autoCorrect={false}
-            containerStyle={styles.searchField}
-          /> */}
+
           <TouchableOpacity style={styles.downloadButton}>
             <Text style={styles.downloadButtonText}>Download</Text>
           </TouchableOpacity>
         </View>
 
-        <SearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search"
-          autoCorrect={false}
-        />
-
         <ScrollView horizontal showsHorizontalScrollIndicator={true}>
           <DataTable style={[styles.table, { minWidth: 800 }]}>
-              <DataTable.Header>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
+            <DataTable.Header>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.nameColumn}
+              >
+                Agent Name
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.idColumn}
+              >
+                Agent ID
+              </DataTable.Title>
+              <DataTable.Title
+                numeric
+                textStyle={styles.columnLabel}
+                style={styles.dateColumn}
+              >
+                Date
+              </DataTable.Title>
+              <DataTable.Title
+                textStyle={styles.columnLabel}
+                style={styles.statusColumn}
+              >
+                Status
+              </DataTable.Title>
+              <DataTable.Title
+                numeric
+                textStyle={styles.columnLabel}
+                style={styles.salesColumn}
+              >
+                Total Sales
+              </DataTable.Title>
+            </DataTable.Header>
+
+            {paginated.map((item) => (
+              <DataTable.Row
+                key={item.id}
+                style={{
+                  borderBottomWidth: 1,
+                  borderBottomColor: palette.mediumGray,
+                }}
+              >
+                <DataTable.Cell
+                  textStyle={styles.rowText}
                   style={styles.nameColumn}
                 >
-                  Agent Name
-                </DataTable.Title>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
+                  {item.agentName}
+                </DataTable.Cell>
+                <DataTable.Cell
+                  textStyle={styles.rowText}
                   style={styles.idColumn}
                 >
-                  Agent ID
-                </DataTable.Title>
-                <DataTable.Title
+                  {item.agentId}
+                </DataTable.Cell>
+                <DataTable.Cell
                   numeric
-                  textStyle={styles.columnLabel}
+                  textStyle={styles.rowText}
                   style={styles.dateColumn}
                 >
-                  Date
-                </DataTable.Title>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
-                  style={styles.statusColumn}
+                  {item.date}
+                </DataTable.Cell>
+                <DataTable.Cell
+                  style={[
+                    styles.statusColumn,
+                    styles.statusPill,
+                    item.status === "Active"
+                      ? styles.statusActive
+                      : item.status === "Inactive"
+                      ? styles.statusInactive
+                      : styles.statusOnLeave,
+                  ]}
                 >
-                  Status
-                </DataTable.Title>
-                <DataTable.Title
+                  <View style={[]}>
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        item.status === "Active"
+                          ? styles.statusPillTextActive
+                          : item.status === "Inactive"
+                          ? styles.statusPillTextInactive
+                          : styles.statusPillTextOnLeave,
+                      ]}
+                    >
+                      {item.status}
+                    </Text>
+                  </View>
+                </DataTable.Cell>
+                <DataTable.Cell
                   numeric
-                  textStyle={styles.columnLabel}
+                  textStyle={styles.rowText}
                   style={styles.salesColumn}
                 >
-                  Total Sales
-                </DataTable.Title>
-              </DataTable.Header>
-
-              {paginated.map((item) => (
-                  <DataTable.Row
-                    key={item.id}
-                    style={{ borderBottomWidth: 1, borderBottomColor: palette.mediumGray }}
-                  >
-                    <DataTable.Cell
-                      textStyle={styles.rowText}
-                      style={styles.nameColumn}
-                    >
-                      {item.agentName}
-                    </DataTable.Cell>
-                    <DataTable.Cell
-                      textStyle={styles.rowText}
-                      style={styles.idColumn}
-                    >
-                      {item.agentId}
-                    </DataTable.Cell>
-                    <DataTable.Cell
-                      numeric
-                      textStyle={styles.rowText}
-                      style={styles.dateColumn}
-                    >
-                      {item.date}
-                    </DataTable.Cell>
-                    <DataTable.Cell style={styles.statusColumn}>
-                      <View
-                        style={[
-                          styles.statusPill,
-                          item.status === "Active"
-                            ? styles.statusActive
-                            : item.status === "Inactive"
-                            ? styles.statusInactive
-                            : styles.statusOnLeave,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusPillText,
-                            item.status === "Active"
-                              ? styles.statusPillTextActive
-                              : item.status === "Inactive"
-                              ? styles.statusPillTextInactive
-                              : styles.statusPillTextOnLeave,
-                          ]}
-                        >
-                          {item.status}
-                        </Text>
-                      </View>
-                    </DataTable.Cell>
-                    <DataTable.Cell
-                      numeric
-                      textStyle={styles.rowText}
-                      style={styles.salesColumn}
-                    >
-                      ${item.totalSales.toLocaleString()}
-                    </DataTable.Cell>
-                  </DataTable.Row>
-                ))}
-
-            </DataTable>
+                  ${item.totalSales.toLocaleString()}
+                </DataTable.Cell>
+              </DataTable.Row>
+            ))}
+          </DataTable>
         </ScrollView>
 
         <DataTable.Pagination
@@ -283,8 +283,14 @@ export default function ReportScreen() {
               primary: palette.interactivePrimary,
               text: palette.textPrimary,
               placeholder: palette.textSecondary,
-              backdrop: colorScheme === "dark" ? palette.background : palette.accentWhite,
-              surface: colorScheme === "dark" ? palette.bgPrimary : palette.accentWhite,
+              backdrop:
+                colorScheme === "dark"
+                  ? palette.background
+                  : palette.accentWhite,
+              surface:
+                colorScheme === "dark"
+                  ? palette.bgPrimary
+                  : palette.accentWhite,
               onSurface: palette.textPrimary,
             },
           }}
@@ -305,7 +311,10 @@ export default function ReportScreen() {
           onPress={() => setShowFilterModal(false)}
         >
           <TouchableOpacity
-            style={[styles.modalContent, { backgroundColor: palette.accentWhite }]}
+            style={[
+              styles.modalContent,
+              { backgroundColor: palette.accentWhite },
+            ]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -323,12 +332,24 @@ export default function ReportScreen() {
                   style={styles.radioOption}
                   onPress={() => setSelectedDateRange(option.value)}
                 >
-                  <View style={[styles.radioButton, { borderColor: palette.mediumGray }]}>
+                  <View
+                    style={[
+                      styles.radioButton,
+                      { borderColor: palette.mediumGray },
+                    ]}
+                  >
                     {selectedDateRange === option.value && (
-                      <View style={[styles.radioButtonInner, { backgroundColor: palette.interactivePrimary }]} />
+                      <View
+                        style={[
+                          styles.radioButtonInner,
+                          { backgroundColor: palette.interactivePrimary },
+                        ]}
+                      />
                     )}
                   </View>
-                  <Text style={[styles.radioLabel, { color: palette.textPrimary }]}>
+                  <Text
+                    style={[styles.radioLabel, { color: palette.textPrimary }]}
+                  >
                     {option.label}
                   </Text>
                 </TouchableOpacity>
@@ -356,14 +377,25 @@ export default function ReportScreen() {
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={[styles.applyButton, { backgroundColor: palette.interactivePrimary, borderColor: palette.interactivePrimary }]}
+                style={[
+                  styles.applyButton,
+                  {
+                    backgroundColor: palette.interactivePrimary,
+                    borderColor: palette.interactivePrimary,
+                  },
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setShowFilterModal(false);
                   // TODO: Apply filter logic here
                 }}
               >
-                <Text style={[styles.applyButtonText, { color: palette.textInverse }]}>
+                <Text
+                  style={[
+                    styles.applyButtonText,
+                    { color: palette.textInverse },
+                  ]}
+                >
                   Apply
                 </Text>
               </TouchableOpacity>
@@ -375,7 +407,10 @@ export default function ReportScreen() {
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
+const createStyles = (
+  palette: (typeof Colors)["light"],
+  colorScheme: "light" | "dark"
+) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -560,25 +595,28 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
       paddingVertical: 6,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 1,
+      // borderWidth: 1,
     },
     statusActive: {
-      backgroundColor: colorScheme === "dark"
-        ? "rgba(108, 139, 125, 0.2)"
-        : "rgba(108, 139, 125, 0.1)",
-      borderColor: palette.statusSuccess,
+      backgroundColor:
+        colorScheme === "dark"
+          ? "rgba(108, 139, 125, 0.2)"
+          : "rgba(108, 139, 125, 0.1)",
+      // borderColor: palette.statusSuccess,
     },
     statusInactive: {
-      backgroundColor: colorScheme === "dark"
-        ? "rgba(220, 53, 69, 0.2)"
-        : "rgba(220, 53, 69, 0.1)",
-      borderColor: palette.statusError,
+      backgroundColor:
+        colorScheme === "dark"
+          ? "rgba(220, 53, 69, 0.2)"
+          : "rgba(220, 53, 69, 0.1)",
+      // borderColor: palette.statusError,
     },
     statusOnLeave: {
-      backgroundColor: colorScheme === "dark"
-        ? "rgba(253, 126, 20, 0.2)"
-        : "rgba(253, 126, 20, 0.1)",
-      borderColor: palette.statusWarning,
+      backgroundColor:
+        colorScheme === "dark"
+          ? "rgba(253, 126, 20, 0.2)"
+          : "rgba(253, 126, 20, 0.1)",
+      // borderColor: palette.statusWarning,
     },
     statusPillText: {
       fontSize: 12,

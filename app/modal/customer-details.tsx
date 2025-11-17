@@ -15,10 +15,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getAllDispositions, syncPendingDispositions } from "@/utils/dispositionStorage";
+import {
+  getAllDispositions,
+  syncPendingDispositions,
+} from "@/utils/dispositionStorage";
 import NetInfo from "@react-native-community/netinfo";
 
-import { CUSTOMER_DETAILS, createDetailStyles, createModalStyles } from "./shared";
+import PageTitle from "@/components/PageTitle";
+import {
+  CUSTOMER_DETAILS,
+  createDetailStyles,
+  createModalStyles,
+} from "./shared";
 
 export default function CustomerDetailsModal() {
   const colorScheme = useColorScheme() ?? "light";
@@ -93,18 +101,27 @@ export default function CustomerDetailsModal() {
 
   // Combine static history with stored dispositions
   // Add IDs to static entries for proper key handling
-  const staticHistory = useMemo(() =>
-    CUSTOMER_DETAILS.history.map((entry, index) => ({
-      ...entry,
-      id: `static-${index}`,
-      synced: true,
-    })), []
+  const staticHistory = useMemo(
+    () =>
+      CUSTOMER_DETAILS.history.map((entry, index) => ({
+        ...entry,
+        id: `static-${index}`,
+        synced: true,
+      })),
+    []
   );
 
   // Combine and sort by date (newest first)
   const allHistory = useMemo(() => {
     const combined = [...staticHistory, ...dispositionHistory];
-    console.log("Combined history count:", combined.length, "Static:", staticHistory.length, "Stored:", dispositionHistory.length);
+    console.log(
+      "Combined history count:",
+      combined.length,
+      "Static:",
+      staticHistory.length,
+      "Stored:",
+      dispositionHistory.length
+    );
     return combined.sort((a, b) => {
       // Parse dates for comparison (simple string comparison for now)
       // In a real app, you'd want proper date parsing
@@ -140,7 +157,8 @@ export default function CustomerDetailsModal() {
             <Ionicons name="close" size={18} color={palette.textPrimary} />
           </TouchableOpacity>
           <View style={styles.header}>
-            <Text style={styles.title}>Customer Details</Text>
+            <PageTitle title={"Customer Details"} />
+            {/* <Text style={styles.title}></Text> */}
             <View style={styles.headerButtons}>
               <TouchableOpacity
                 style={styles.headerAction}
@@ -164,21 +182,50 @@ export default function CustomerDetailsModal() {
                   size={16}
                   color={palette.textInverse}
                 />
-                <Text style={styles.headerActionPrimaryText}>Fill Disposition</Text>
+                <Text style={styles.headerActionPrimaryText}>
+                  Fill Disposition
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={styles.detailsContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.detailsContent}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Personal Information</Text>
               <View style={styles.detailGrid}>
-                <DetailItem label="First Name" value={CUSTOMER_DETAILS.firstName} styles={detailStyles} />
-                <DetailItem label="Last Name" value={CUSTOMER_DETAILS.lastName} styles={detailStyles} />
-                <DetailItem label="Middle Name" value={CUSTOMER_DETAILS.middleName} styles={detailStyles} />
-                <DetailItem label="Email" value={CUSTOMER_DETAILS.email} styles={detailStyles} />
-                <DetailItem label="Phone" value={CUSTOMER_DETAILS.phone} styles={detailStyles} />
-                <DetailItem label="Address" value={CUSTOMER_DETAILS.address} styles={detailStyles} />
+                <DetailItem
+                  label="First Name"
+                  value={CUSTOMER_DETAILS.firstName}
+                  styles={detailStyles}
+                />
+                <DetailItem
+                  label="Last Name"
+                  value={CUSTOMER_DETAILS.lastName}
+                  styles={detailStyles}
+                />
+                <DetailItem
+                  label="Middle Name"
+                  value={CUSTOMER_DETAILS.middleName}
+                  styles={detailStyles}
+                />
+                <DetailItem
+                  label="Email"
+                  value={CUSTOMER_DETAILS.email}
+                  styles={detailStyles}
+                />
+                <DetailItem
+                  label="Phone"
+                  value={CUSTOMER_DETAILS.phone}
+                  styles={detailStyles}
+                />
+                <DetailItem
+                  label="Address"
+                  value={CUSTOMER_DETAILS.address}
+                  styles={detailStyles}
+                />
               </View>
             </View>
 
@@ -192,41 +239,115 @@ export default function CustomerDetailsModal() {
               <ScrollView horizontal showsHorizontalScrollIndicator={true}>
                 <DataTable style={[styles.historyTable, { minWidth: 600 }]}>
                   <DataTable.Header>
-                    <DataTable.Title textStyle={styles.historyHeader} style={styles.dateColumn}>Date</DataTable.Title>
-                    <DataTable.Title textStyle={styles.historyHeader} style={styles.timeColumn}>Time</DataTable.Title>
-                    <DataTable.Title textStyle={styles.historyHeader} style={styles.agentColumn}>Agent</DataTable.Title>
-                    <DataTable.Title textStyle={styles.historyHeader} style={styles.durationColumn}>Time Spent</DataTable.Title>
-                    <DataTable.Title textStyle={styles.historyHeader} style={styles.statusColumn}>Status</DataTable.Title>
-                    <DataTable.Title textStyle={styles.historyHeader} style={styles.actionColumn}>Action</DataTable.Title>
+                    <DataTable.Title
+                      textStyle={styles.historyHeader}
+                      style={styles.dateColumn}
+                    >
+                      Date
+                    </DataTable.Title>
+                    <DataTable.Title
+                      textStyle={styles.historyHeader}
+                      style={styles.timeColumn}
+                    >
+                      Time
+                    </DataTable.Title>
+                    <DataTable.Title
+                      textStyle={styles.historyHeader}
+                      style={styles.agentColumn}
+                    >
+                      Agent
+                    </DataTable.Title>
+                    <DataTable.Title
+                      textStyle={styles.historyHeader}
+                      style={styles.durationColumn}
+                    >
+                      Time Spent
+                    </DataTable.Title>
+                    <DataTable.Title
+                      textStyle={styles.historyHeader}
+                      style={styles.statusColumn}
+                    >
+                      Status
+                    </DataTable.Title>
+                    <DataTable.Title
+                      textStyle={styles.historyHeader}
+                      style={styles.actionColumn}
+                    >
+                      Action
+                    </DataTable.Title>
                   </DataTable.Header>
                   {paginated.map((entry, index) => {
-                    const isSynced = entry.synced !== undefined ? entry.synced : true;
+                    const isSynced =
+                      entry.synced !== undefined ? entry.synced : true;
                     return (
                       <DataTable.Row
                         key={entry.id || `entry-${index}`}
-                        style={{ borderBottomWidth: 1, borderBottomColor: palette.mediumGray }}
+                        style={{
+                          borderBottomWidth: 1,
+                          borderBottomColor: palette.mediumGray,
+                        }}
                       >
-                        <DataTable.Cell textStyle={styles.historyCell} style={styles.dateColumn}>{entry.date}</DataTable.Cell>
-                        <DataTable.Cell textStyle={styles.historyCell} style={styles.timeColumn}>{entry.time}</DataTable.Cell>
-                        <DataTable.Cell textStyle={styles.historyCell} style={styles.agentColumn}>{entry.agent}</DataTable.Cell>
-                        <DataTable.Cell textStyle={styles.historyCell} style={styles.durationColumn}>{entry.duration}</DataTable.Cell>
+                        <DataTable.Cell
+                          textStyle={styles.historyCell}
+                          style={styles.dateColumn}
+                        >
+                          {entry.date}
+                        </DataTable.Cell>
+                        <DataTable.Cell
+                          textStyle={styles.historyCell}
+                          style={styles.timeColumn}
+                        >
+                          {entry.time}
+                        </DataTable.Cell>
+                        <DataTable.Cell
+                          textStyle={styles.historyCell}
+                          style={styles.agentColumn}
+                        >
+                          {entry.agent}
+                        </DataTable.Cell>
+                        <DataTable.Cell
+                          textStyle={styles.historyCell}
+                          style={styles.durationColumn}
+                        >
+                          {entry.duration}
+                        </DataTable.Cell>
                         <DataTable.Cell style={styles.statusColumn}>
                           {!isSynced && (
-                            <View style={[styles.syncBadge, { backgroundColor: palette.statusWarning }]}>
-                              <Ionicons name="cloud-offline-outline" size={12} color={palette.textInverse} />
+                            <View
+                              style={[
+                                styles.syncBadge,
+                                { backgroundColor: palette.statusWarning },
+                              ]}
+                            >
+                              <Ionicons
+                                name="cloud-offline-outline"
+                                size={12}
+                                color={palette.textInverse}
+                              />
                               <Text style={styles.syncBadgeText}>Pending</Text>
                             </View>
                           )}
                           {isSynced && (
-                            <View style={[styles.syncBadge, { backgroundColor: palette.statusSuccess }]}>
-                              <Ionicons name="checkmark-circle" size={12} color={palette.textInverse} />
+                            <View
+                              style={[
+                                styles.syncBadge,
+                                { backgroundColor: palette.statusSuccess },
+                              ]}
+                            >
+                              <Ionicons
+                                name="checkmark-circle"
+                                size={12}
+                                color={palette.textInverse}
+                              />
                               <Text style={styles.syncBadgeText}>Synced</Text>
                             </View>
                           )}
                         </DataTable.Cell>
                         <DataTable.Cell style={styles.actionColumn}>
                           <TouchableOpacity
-                            onPress={() => router.push("/modal/disposition-history-details")}
+                            onPress={() =>
+                              router.push("/modal/disposition-history-details")
+                            }
                             activeOpacity={0.7}
                           >
                             <Text style={styles.historyLink}>View Details</Text>
@@ -237,7 +358,7 @@ export default function CustomerDetailsModal() {
                   })}
                 </DataTable>
               </ScrollView>
-              <DataTable.Pagination
+              {/* <DataTable.Pagination
                 page={page}
                 numberOfPages={totalPages}
                 onPageChange={(page) => setPage(page)}
@@ -253,12 +374,18 @@ export default function CustomerDetailsModal() {
                     primary: palette.interactivePrimary,
                     text: palette.textPrimary,
                     placeholder: palette.textSecondary,
-                    backdrop: colorScheme === "dark" ? palette.background : palette.accentWhite,
-                    surface: colorScheme === "dark" ? palette.bgPrimary : palette.accentWhite,
+                    backdrop:
+                      colorScheme === "dark"
+                        ? palette.background
+                        : palette.accentWhite,
+                    surface:
+                      colorScheme === "dark"
+                        ? palette.bgPrimary
+                        : palette.accentWhite,
                     onSurface: palette.textPrimary,
                   },
                 }}
-              />
+              /> */}
             </View>
           </ScrollView>
         </View>

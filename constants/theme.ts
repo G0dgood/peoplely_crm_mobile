@@ -39,7 +39,7 @@ export const Colors = {
     statusError: "#DC3545",
     statusInfo: "#6C757D",
     interactivePrimary: "#0F172A",
-    interactiveSecondary: "#6C8B7D",
+    interactiveSecondary: "#0F172A",
     interactiveHover: "#FFF3CD",
     interactiveDisabled: "#DEE2E6",
     shadowColor: "#6C8B7D",
@@ -50,7 +50,7 @@ export const Colors = {
     tint: "#FD7E14",
     icon: "#6C757D",
     tabIconDefault: "#6C757D",
-    tabIconSelected: "#FD7E14",
+    tabIconSelected: "#6C8B7D",
   },
   dark: {
     background: "#0F172A",
@@ -84,8 +84,8 @@ export const Colors = {
     statusWarning: "#FD7E14",
     statusError: "#DC3545",
     statusInfo: "#94A3B8",
-    interactivePrimary: "#FD7E14",
-    interactiveSecondary: "#6C8B7D",
+    interactivePrimary: "#6C8B7D",
+    interactiveSecondary: "#FD7E14",
     interactiveHover: "#FFF3CD",
     interactiveDisabled: "#475569",
     shadowColor: "#000000",
@@ -96,7 +96,7 @@ export const Colors = {
     tint: "#FD7E14",
     icon: "#CBD5E1",
     tabIconDefault: "#94A3B8",
-    tabIconSelected: "#FD7E14",
+    tabIconSelected: "#6C8B7D",
   },
 };
 

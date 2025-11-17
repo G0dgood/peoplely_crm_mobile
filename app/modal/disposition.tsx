@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import NetInfo from "@react-native-community/netinfo";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -13,15 +14,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import TextField from "@/components/forms/TextField";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
-import { saveDisposition, isOnline } from "@/utils/dispositionStorage";
+import { saveDisposition } from "@/utils/dispositionStorage";
 
+import PageTitle from "@/components/PageTitle";
 import { createModalStyles } from "./shared";
 
 export default function DispositionModal() {
@@ -43,8 +44,10 @@ export default function DispositionModal() {
 
   // Dropdown modals
   const [showCallAnsweredModal, setShowCallAnsweredModal] = useState(false);
-  const [showReasonNonPaymentModal, setShowReasonNonPaymentModal] = useState(false);
-  const [showReasonNotWatchingModal, setShowReasonNotWatchingModal] = useState(false);
+  const [showReasonNonPaymentModal, setShowReasonNonPaymentModal] =
+    useState(false);
+  const [showReasonNotWatchingModal, setShowReasonNotWatchingModal] =
+    useState(false);
   const [showCommitmentDateModal, setShowCommitmentDateModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -163,7 +166,8 @@ export default function DispositionModal() {
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={[styles.container, { backgroundColor: palette.accentWhite }]}
+        <View
+          style={[styles.container, { backgroundColor: palette.accentWhite }]}
         >
           <TouchableOpacity
             style={styles.closeButton}
@@ -174,22 +178,39 @@ export default function DispositionModal() {
           </TouchableOpacity>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <Text style={styles.title}>Disposition</Text>
+              <PageTitle title={"Disposition"} />
               {!isConnected && (
-                <View style={[styles.offlineBadge, { backgroundColor: palette.statusWarning }]}>
-                  <Ionicons name="cloud-offline-outline" size={14} color={palette.textInverse} />
+                <View
+                  style={[
+                    styles.offlineBadge,
+                    { backgroundColor: palette.statusWarning },
+                  ]}
+                >
+                  <Ionicons
+                    name="cloud-offline-outline"
+                    size={14}
+                    color={palette.textInverse}
+                  />
                   <Text style={styles.offlineBadgeText}>Offline</Text>
                 </View>
               )}
             </View>
             {!isConnected && (
-              <Text style={[styles.offlineMessage, { color: palette.textSecondary }]}>
+              <Text
+                style={[
+                  styles.offlineMessage,
+                  { color: palette.textSecondary },
+                ]}
+              >
                 Data will be synced when network is available
               </Text>
             )}
           </View>
 
-          <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.form}
+            showsVerticalScrollIndicator={false}
+          >
             <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -203,7 +224,11 @@ export default function DispositionModal() {
                 editable={false}
                 value={callAnswered}
                 trailingIcon={
-                  <Ionicons name="chevron-down" size={20} color={palette.textSecondary} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={palette.textSecondary}
+                  />
                 }
                 onPressTrailingIcon={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -225,7 +250,11 @@ export default function DispositionModal() {
                 editable={false}
                 value={reasonForNonPayment}
                 trailingIcon={
-                  <Ionicons name="chevron-down" size={20} color={palette.textSecondary} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={palette.textSecondary}
+                  />
                 }
                 onPressTrailingIcon={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -247,7 +276,11 @@ export default function DispositionModal() {
                 editable={false}
                 value={reasonForNotWatching}
                 trailingIcon={
-                  <Ionicons name="chevron-down" size={20} color={palette.textSecondary} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={palette.textSecondary}
+                  />
                 }
                 onPressTrailingIcon={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -267,9 +300,17 @@ export default function DispositionModal() {
                 label="Commitment Date"
                 placeholder="dd/mm/yyyy"
                 editable={false}
-                value={commitmentDate ? commitmentDate.toLocaleDateString("en-GB") : ""}
+                value={
+                  commitmentDate
+                    ? commitmentDate.toLocaleDateString("en-GB")
+                    : ""
+                }
                 trailingIcon={
-                  <Ionicons name="calendar-outline" size={20} color={palette.textSecondary} />
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={palette.textSecondary}
+                  />
                 }
                 onPressTrailingIcon={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -299,7 +340,11 @@ export default function DispositionModal() {
                 editable={false}
                 value={date ? date.toLocaleDateString("en-GB") : ""}
                 trailingIcon={
-                  <Ionicons name="calendar-outline" size={20} color={palette.textSecondary} />
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={palette.textSecondary}
+                  />
                 }
                 onPressTrailingIcon={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -329,7 +374,11 @@ export default function DispositionModal() {
                     : ""
                 }
                 trailingIcon={
-                  <Ionicons name="time-outline" size={20} color={palette.textSecondary} />
+                  <Ionicons
+                    name="time-outline"
+                    size={20}
+                    color={palette.textSecondary}
+                  />
                 }
                 onPressTrailingIcon={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -360,7 +409,11 @@ export default function DispositionModal() {
               disabled={isSaving}
             >
               <Text style={styles.saveButtonText}>
-                {isSaving ? "Saving..." : isConnected ? "Save & Post" : "Save (Offline)"}
+                {isSaving
+                  ? "Saving..."
+                  : isConnected
+                  ? "Save & Post"
+                  : "Save (Offline)"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -380,7 +433,10 @@ export default function DispositionModal() {
           onPress={() => setShowCallAnsweredModal(false)}
         >
           <TouchableOpacity
-            style={[styles.modalContent, { backgroundColor: palette.accentWhite }]}
+            style={[
+              styles.modalContent,
+              { backgroundColor: palette.accentWhite },
+            ]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -395,13 +451,18 @@ export default function DispositionModal() {
                 <Ionicons name="close" size={24} color={palette.textPrimary} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+            >
               {callAnsweredOptions.map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
                     styles.modalOption,
-                    callAnswered === option && { backgroundColor: palette.offWhite2 },
+                    callAnswered === option && {
+                      backgroundColor: palette.offWhite2,
+                    },
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -450,7 +511,10 @@ export default function DispositionModal() {
           onPress={() => setShowReasonNonPaymentModal(false)}
         >
           <TouchableOpacity
-            style={[styles.modalContent, { backgroundColor: palette.accentWhite }]}
+            style={[
+              styles.modalContent,
+              { backgroundColor: palette.accentWhite },
+            ]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -465,13 +529,18 @@ export default function DispositionModal() {
                 <Ionicons name="close" size={24} color={palette.textPrimary} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+            >
               {reasonNonPaymentOptions.map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
                     styles.modalOption,
-                    reasonForNonPayment === option && { backgroundColor: palette.offWhite2 },
+                    reasonForNonPayment === option && {
+                      backgroundColor: palette.offWhite2,
+                    },
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -487,7 +556,8 @@ export default function DispositionModal() {
                           reasonForNonPayment === option
                             ? palette.interactivePrimary
                             : palette.textPrimary,
-                        fontWeight: reasonForNonPayment === option ? "600" : "400",
+                        fontWeight:
+                          reasonForNonPayment === option ? "600" : "400",
                       },
                     ]}
                   >
@@ -520,7 +590,10 @@ export default function DispositionModal() {
           onPress={() => setShowReasonNotWatchingModal(false)}
         >
           <TouchableOpacity
-            style={[styles.modalContent, { backgroundColor: palette.accentWhite }]}
+            style={[
+              styles.modalContent,
+              { backgroundColor: palette.accentWhite },
+            ]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -535,13 +608,18 @@ export default function DispositionModal() {
                 <Ionicons name="close" size={24} color={palette.textPrimary} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+            >
               {reasonNotWatchingOptions.map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
                     styles.modalOption,
-                    reasonForNotWatching === option && { backgroundColor: palette.offWhite2 },
+                    reasonForNotWatching === option && {
+                      backgroundColor: palette.offWhite2,
+                    },
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -557,7 +635,8 @@ export default function DispositionModal() {
                           reasonForNotWatching === option
                             ? palette.interactivePrimary
                             : palette.textPrimary,
-                        fontWeight: reasonForNotWatching === option ? "600" : "400",
+                        fontWeight:
+                          reasonForNotWatching === option ? "600" : "400",
                       },
                     ]}
                   >
@@ -591,17 +670,26 @@ export default function DispositionModal() {
             onPress={() => setShowCommitmentDateModal(false)}
           >
             <View
-              style={[styles.datePickerModal, { backgroundColor: palette.accentWhite }]}
+              style={[
+                styles.datePickerModal,
+                { backgroundColor: palette.accentWhite },
+              ]}
             >
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>
+                <Text
+                  style={[styles.modalTitle, { color: palette.textPrimary }]}
+                >
                   Select Commitment Date
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowCommitmentDateModal(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color={palette.textPrimary} />
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={palette.textPrimary}
+                  />
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -620,18 +708,34 @@ export default function DispositionModal() {
                   style={styles.datePickerButton}
                   onPress={() => setShowCommitmentDateModal(false)}
                 >
-                  <Text style={[styles.datePickerButtonText, { color: palette.textPrimary }]}>
+                  <Text
+                    style={[
+                      styles.datePickerButtonText,
+                      { color: palette.textPrimary },
+                    ]}
+                  >
                     Cancel
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.datePickerButton, { backgroundColor: palette.interactivePrimary, borderColor: palette.interactivePrimary }]}
+                  style={[
+                    styles.datePickerButton,
+                    {
+                      backgroundColor: palette.interactivePrimary,
+                      borderColor: palette.interactivePrimary,
+                    },
+                  ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setShowCommitmentDateModal(false);
                   }}
                 >
-                  <Text style={[styles.datePickerButtonText, { color: palette.textInverse }]}>
+                  <Text
+                    style={[
+                      styles.datePickerButtonText,
+                      { color: palette.textInverse },
+                    ]}
+                  >
                     Done
                   </Text>
                 </TouchableOpacity>
@@ -657,17 +761,29 @@ export default function DispositionModal() {
                 onPress={() => setShowDatePicker(false)}
               >
                 <View
-                  style={[styles.datePickerModal, { backgroundColor: palette.accentWhite }]}
+                  style={[
+                    styles.datePickerModal,
+                    { backgroundColor: palette.accentWhite },
+                  ]}
                 >
                   <View style={styles.modalHeader}>
-                    <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>
+                    <Text
+                      style={[
+                        styles.modalTitle,
+                        { color: palette.textPrimary },
+                      ]}
+                    >
                       Select Date
                     </Text>
                     <TouchableOpacity
                       onPress={() => setShowDatePicker(false)}
                       style={styles.modalCloseButton}
                     >
-                      <Ionicons name="close" size={24} color={palette.textPrimary} />
+                      <Ionicons
+                        name="close"
+                        size={24}
+                        color={palette.textPrimary}
+                      />
                     </TouchableOpacity>
                   </View>
                   <DateTimePicker
@@ -686,18 +802,34 @@ export default function DispositionModal() {
                       style={styles.datePickerButton}
                       onPress={() => setShowDatePicker(false)}
                     >
-                      <Text style={[styles.datePickerButtonText, { color: palette.textPrimary }]}>
+                      <Text
+                        style={[
+                          styles.datePickerButtonText,
+                          { color: palette.textPrimary },
+                        ]}
+                      >
                         Cancel
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.datePickerButton, { backgroundColor: palette.interactivePrimary, borderColor: palette.interactivePrimary }]}
+                      style={[
+                        styles.datePickerButton,
+                        {
+                          backgroundColor: palette.interactivePrimary,
+                          borderColor: palette.interactivePrimary,
+                        },
+                      ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setShowDatePicker(false);
                       }}
                     >
-                      <Text style={[styles.datePickerButtonText, { color: palette.textInverse }]}>
+                      <Text
+                        style={[
+                          styles.datePickerButtonText,
+                          { color: palette.textInverse },
+                        ]}
+                      >
                         Done
                       </Text>
                     </TouchableOpacity>
@@ -737,17 +869,29 @@ export default function DispositionModal() {
                 onPress={() => setShowTimePicker(false)}
               >
                 <View
-                  style={[styles.datePickerModal, { backgroundColor: palette.accentWhite }]}
+                  style={[
+                    styles.datePickerModal,
+                    { backgroundColor: palette.accentWhite },
+                  ]}
                 >
                   <View style={styles.modalHeader}>
-                    <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>
+                    <Text
+                      style={[
+                        styles.modalTitle,
+                        { color: palette.textPrimary },
+                      ]}
+                    >
                       Select Time
                     </Text>
                     <TouchableOpacity
                       onPress={() => setShowTimePicker(false)}
                       style={styles.modalCloseButton}
                     >
-                      <Ionicons name="close" size={24} color={palette.textPrimary} />
+                      <Ionicons
+                        name="close"
+                        size={24}
+                        color={palette.textPrimary}
+                      />
                     </TouchableOpacity>
                   </View>
                   <DateTimePicker
@@ -766,18 +910,34 @@ export default function DispositionModal() {
                       style={styles.datePickerButton}
                       onPress={() => setShowTimePicker(false)}
                     >
-                      <Text style={[styles.datePickerButtonText, { color: palette.textPrimary }]}>
+                      <Text
+                        style={[
+                          styles.datePickerButtonText,
+                          { color: palette.textPrimary },
+                        ]}
+                      >
                         Cancel
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.datePickerButton, { backgroundColor: palette.interactivePrimary, borderColor: palette.interactivePrimary }]}
+                      style={[
+                        styles.datePickerButton,
+                        {
+                          backgroundColor: palette.interactivePrimary,
+                          borderColor: palette.interactivePrimary,
+                        },
+                      ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setShowTimePicker(false);
                       }}
                     >
-                      <Text style={[styles.datePickerButtonText, { color: palette.textInverse }]}>
+                      <Text
+                        style={[
+                          styles.datePickerButtonText,
+                          { color: palette.textInverse },
+                        ]}
+                      >
                         Done
                       </Text>
                     </TouchableOpacity>

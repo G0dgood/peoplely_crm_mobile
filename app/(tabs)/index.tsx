@@ -37,12 +37,37 @@ const WIDGET_STORAGE_KEY = "@dashboard_selected_widgets";
 const STATUS_STORAGE_KEY = "@user_status";
 
 const STATUS_OPTIONS = [
-  { id: "available", label: "Available/Ready", icon: "checkmark-circle-outline", color: "statusSuccess" }, // Green
-  { id: "busy", label: "Busy On Call", icon: "call-outline", color: "statusError" }, // Red
-  { id: "acw", label: "After Call Work (ACW)", icon: "document-text-outline", color: "statusWarning" }, // Orange
+  {
+    id: "available",
+    label: "Available/Ready",
+    icon: "checkmark-circle-outline",
+    color: "statusSuccess",
+  }, // Green
+  {
+    id: "busy",
+    label: "Busy On Call",
+    icon: "call-outline",
+    color: "statusError",
+  }, // Red
+  {
+    id: "acw",
+    label: "After Call Work (ACW)",
+    icon: "document-text-outline",
+    color: "statusWarning",
+  }, // Orange
   { id: "away", label: "Away", icon: "time-outline", color: "statusInfo" }, // Gray/Blue
-  { id: "break", label: "On Break", icon: "cafe-outline", color: "interactivePrimary" }, // Dark Blue/Orange
-  { id: "meeting", label: "In a Meeting", icon: "people-outline", color: "interactiveSecondary" }, // Sage Green
+  {
+    id: "break",
+    label: "On Break",
+    icon: "cafe-outline",
+    color: "interactivePrimary",
+  }, // Dark Blue/Orange
+  {
+    id: "meeting",
+    label: "In a Meeting",
+    icon: "people-outline",
+    color: "interactiveSecondary",
+  }, // Sage Green
 ];
 
 export default function DashboardScreen() {
@@ -142,15 +167,42 @@ export default function DashboardScreen() {
 
   // Build cards array - conditionally include "Pending Sync" only when there are pending items
   const baseCards = [
-    { type: "total", label: "Total Calls", value: "28", icon: "call-outline", color: palette.interactivePrimary },
-    { type: "failed", label: "Failed Call", value: "12", icon: "close-circle", color: palette.statusError },
-    { type: "successful", label: "Successful", value: "45", icon: "checkmark-circle", color: palette.statusSuccess },
+    {
+      type: "total",
+      label: "Total Calls",
+      value: "28",
+      icon: "call-outline",
+      color: palette.interactivePrimary,
+    },
+    {
+      type: "failed",
+      label: "Failed Call",
+      value: "12",
+      icon: "close-circle",
+      color: palette.statusError,
+    },
+    {
+      type: "successful",
+      label: "Successful",
+      value: "45",
+      icon: "checkmark-circle",
+      color: palette.statusSuccess,
+    },
   ];
 
   // Only add "Pending Sync" card if there are pending dispositions
-  const pendingCard = pendingCount > 0
-    ? [{ type: "pending", label: "Pending Sync", value: pendingCount.toString(), icon: "time-outline", color: palette.statusWarning }]
-    : [];
+  const pendingCard =
+    pendingCount > 0
+      ? [
+          {
+            type: "pending",
+            label: "Pending Sync",
+            value: pendingCount.toString(),
+            icon: "time-outline",
+            color: palette.statusWarning,
+          },
+        ]
+      : [];
 
   const cards = [...baseCards, ...pendingCard];
 
@@ -196,7 +248,9 @@ export default function DashboardScreen() {
               color={palette.interactiveSecondary}
             />
             <View>
-              <Text style={[styles.headerText, { color: palette.textSecondary }]}>
+              <Text
+                style={[styles.headerText, { color: palette.textSecondary }]}
+              >
                 Good afternoon
               </Text>
               {user?.name && (
@@ -216,17 +270,26 @@ export default function DashboardScreen() {
               activeOpacity={0.8}
             >
               {(() => {
-                const status = STATUS_OPTIONS.find((s) => s.id === currentStatus);
+                const status = STATUS_OPTIONS.find(
+                  (s) => s.id === currentStatus
+                );
                 return (
                   <>
                     <View
                       style={[
                         styles.statusDot,
-                        { backgroundColor: palette[status?.color as keyof typeof palette] || palette.statusSuccess },
+                        {
+                          backgroundColor:
+                            palette[status?.color as keyof typeof palette] ||
+                            palette.statusSuccess,
+                        },
                       ]}
                     />
                     <Text
-                      style={[styles.statusBadgeText, { color: palette.textPrimary }]}
+                      style={[
+                        styles.statusBadgeText,
+                        { color: palette.textPrimary },
+                      ]}
                       numberOfLines={1}
                     >
                       {status?.label || "Available"}
@@ -281,7 +344,10 @@ export default function DashboardScreen() {
                     color={card.color}
                   />
                   <Text
-                    style={[styles.balanceLabel, { color: palette.primaryLighter }]}
+                    style={[
+                      styles.balanceLabel,
+                      { color: palette.primaryLighter },
+                    ]}
                   >
                     {card.label}
                   </Text>
@@ -294,12 +360,19 @@ export default function DashboardScreen() {
                   />
                 )}
               </View>
-              <Text style={[styles.balanceValue, { color: palette.textPrimary }]}>
+              <Text
+                style={[styles.balanceValue, { color: palette.textPrimary }]}
+              >
                 {card.value}
               </Text>
               {card.type === "total" && (
                 <View style={styles.gainRow}>
-                  <Text style={[styles.gainLabel, { color: palette.primaryLighter }]}>
+                  <Text
+                    style={[
+                      styles.gainLabel,
+                      { color: palette.primaryLighter },
+                    ]}
+                  >
                     Total Gains
                   </Text>
                   <View style={styles.gainChip}>
@@ -348,7 +421,10 @@ export default function DashboardScreen() {
             style={[
               styles.chartContainer,
               styles.emptyChartContainer,
-              { backgroundColor: palette.accentWhite, borderColor: palette.mediumGray },
+              {
+                backgroundColor: palette.accentWhite,
+                borderColor: palette.mediumGray,
+              },
             ]}
           >
             <Ionicons
@@ -356,10 +432,17 @@ export default function DashboardScreen() {
               size={64}
               color={palette.textSecondary}
             />
-            <Text style={[styles.emptyChartText, { color: palette.textSecondary }]}>
+            <Text
+              style={[styles.emptyChartText, { color: palette.textSecondary }]}
+            >
               No charts added yet
             </Text>
-            <Text style={[styles.emptyChartSubtext, { color: palette.textSecondary }]}>
+            <Text
+              style={[
+                styles.emptyChartSubtext,
+                { color: palette.textSecondary },
+              ]}
+            >
               Tap &quot;Add widget&quot; to add charts to your dashboard
             </Text>
           </View>
@@ -369,13 +452,16 @@ export default function DashboardScreen() {
               key={widget.id}
               style={[
                 styles.chartContainer,
-                { backgroundColor: palette.accentWhite, borderColor: palette.mediumGray },
+                {
+                  backgroundColor: palette.accentWhite,
+                  borderColor: palette.mediumGray,
+                },
               ]}
             >
               {widget.type === "bar" ? (
                 <BarChart
                   data={[28, 12, 45, 8, 32, 15, 20]}
-                  width={SCREEN_WIDTH - 40}
+                  width={SCREEN_WIDTH * 0.8}
                   height={220}
                   primaryColor={palette.interactivePrimary}
                   secondaryColor={palette.interactiveSecondary}
@@ -387,7 +473,15 @@ export default function DashboardScreen() {
                   showXAxisLabels={true}
                   showYAxisLabels={true}
                   formatLabel={(index: number) => {
-                    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+                    const labels = [
+                      "Mon",
+                      "Tue",
+                      "Wed",
+                      "Thu",
+                      "Fri",
+                      "Sat",
+                      "Sun",
+                    ];
                     return labels[index] || "";
                   }}
                   style={styles.chart}
@@ -395,7 +489,7 @@ export default function DashboardScreen() {
               ) : widget.type === "line" ? (
                 <LineChart
                   data={[28, 12, 45, 8, 32, 15, 20]}
-                  width={SCREEN_WIDTH - 40}
+                  width={SCREEN_WIDTH * 0.8}
                   height={220}
                   lineColor={palette.interactivePrimary}
                   labelColor={palette.textSecondary}
@@ -406,7 +500,15 @@ export default function DashboardScreen() {
                   showXAxisLabels={true}
                   showYAxisLabels={true}
                   formatLabel={(index: number) => {
-                    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+                    const labels = [
+                      "Mon",
+                      "Tue",
+                      "Wed",
+                      "Thu",
+                      "Fri",
+                      "Sat",
+                      "Sun",
+                    ];
                     return labels[index] || "";
                   }}
                   style={styles.chart}
@@ -422,8 +524,8 @@ export default function DashboardScreen() {
                     { value: 15, label: "Sat" },
                     { value: 20, label: "Sun" },
                   ]}
-                  width={SCREEN_WIDTH - 40}
-                  height={220}
+                  width={SCREEN_WIDTH * 0.9}
+                  height={400}
                   colors={[
                     palette.interactivePrimary,
                     palette.interactiveSecondary,
@@ -448,7 +550,7 @@ export default function DashboardScreen() {
                     { value: 15, label: "Sat" },
                     { value: 20, label: "Sun" },
                   ]}
-                  width={SCREEN_WIDTH - 40}
+                  width={SCREEN_WIDTH * 0.8}
                   height={220}
                   colors={[
                     palette.interactivePrimary,
@@ -465,16 +567,31 @@ export default function DashboardScreen() {
                   strokeWidth={20}
                 />
               ) : (
-                <View style={[styles.chartPlaceholder, { backgroundColor: palette.offWhite }]}>
+                <View
+                  style={[
+                    styles.chartPlaceholder,
+                    { backgroundColor: palette.offWhite },
+                  ]}
+                >
                   <Ionicons
                     name={widget.icon}
                     size={48}
                     color={palette.textSecondary}
                   />
-                  <Text style={[styles.chartPlaceholderText, { color: palette.textSecondary }]}>
+                  <Text
+                    style={[
+                      styles.chartPlaceholderText,
+                      { color: palette.textSecondary },
+                    ]}
+                  >
                     {widget.name}
                   </Text>
-                  <Text style={[styles.chartPlaceholderSubtext, { color: palette.textSecondary }]}>
+                  <Text
+                    style={[
+                      styles.chartPlaceholderSubtext,
+                      { color: palette.textSecondary },
+                    ]}
+                  >
                     Chart type coming soon
                   </Text>
                 </View>
@@ -498,7 +615,10 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.statusDropdown,
-                { backgroundColor: palette.accentWhite, borderColor: palette.mediumGray },
+                {
+                  backgroundColor: palette.accentWhite,
+                  borderColor: palette.mediumGray,
+                },
               ]}
             >
               {STATUS_OPTIONS.map((status) => {
@@ -514,7 +634,10 @@ export default function DashboardScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setCurrentStatus(status.id);
                       try {
-                        await AsyncStorage.setItem(STATUS_STORAGE_KEY, status.id);
+                        await AsyncStorage.setItem(
+                          STATUS_STORAGE_KEY,
+                          status.id
+                        );
                       } catch (error) {
                         console.error("Error saving status:", error);
                       }
@@ -525,7 +648,11 @@ export default function DashboardScreen() {
                     <View
                       style={[
                         styles.statusOptionDot,
-                        { backgroundColor: palette[status.color as keyof typeof palette] || palette.statusSuccess },
+                        {
+                          backgroundColor:
+                            palette[status.color as keyof typeof palette] ||
+                            palette.statusSuccess,
+                        },
                       ]}
                     />
                     <Text
@@ -628,6 +755,7 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       gap: 8,
       marginRight: 8,
       minWidth: 100,
+      height: 36,
     },
     statusDot: {
       width: 10,
@@ -652,20 +780,20 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     },
     notificationBadge: {
       position: "absolute",
-      top: 4,
-      right: 4,
-      minWidth: 18,
-      height: 18,
+      top: 1,
+      right: 2,
+      minWidth: 16,
+      height: 16,
       borderRadius: 9,
       justifyContent: "center",
       alignItems: "center",
-      paddingHorizontal: 4,
+      paddingHorizontal: 3,
       borderWidth: 2,
       borderColor: palette.accentWhite,
     },
     notificationBadgeText: {
       color: palette.textInverse,
-      fontSize: 10,
+      fontSize: 8,
       fontWeight: "700",
       lineHeight: 12,
     },
@@ -809,11 +937,6 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       justifyContent: "center",
       backgroundColor: palette.interactivePrimary,
       paddingVertical: 16,
-      shadowColor: palette.interactivePrimary,
-      shadowOpacity: 0.2,
-      shadowOffset: { width: 0, height: 12 },
-      shadowRadius: 18,
-      elevation: 4,
     },
     primaryButtonText: {
       fontSize: 16,
@@ -835,16 +958,16 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       fontWeight: "600",
     },
     chartContainer: {
-      padding: 16,
+      // padding: 16,
       borderRadius: 0,
       borderWidth: 1,
-      overflow: "hidden",
+      // overflow: "hidden",
     },
     emptyChartContainer: {
       justifyContent: "center",
       alignItems: "center",
       minHeight: 220,
-      gap: 12,
+      // gap: 12,
     },
     emptyChartText: {
       fontSize: 18,
@@ -911,7 +1034,9 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       height: 140,
       opacity: 0.6,
     },
-    planCopy: { gap: 6 },
+    planCopy: {
+      gap: 6,
+    },
     planHighlightTitle: {
       fontSize: 18,
       fontWeight: "600",

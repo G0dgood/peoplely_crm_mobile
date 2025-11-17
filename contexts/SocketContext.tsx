@@ -1,5 +1,11 @@
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { io, Socket } from "socket.io-client";
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 
 type SocketContextValue = {
@@ -53,7 +59,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   const socketRef = useRef<Socket | null>(null);
 
   // Default socket URL - can be overridden via props or environment variable
-  const defaultSocketUrl = socketUrl || process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:3000";
+  const defaultSocketUrl =
+    socketUrl || process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:3000";
 
   const connect = (url?: string) => {
     if (socketRef.current?.connected) {
@@ -101,7 +108,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       });
 
       newSocket.on("connect_error", (err) => {
-        console.error("Socket connection error:", err);
+        // console.error("Socket connection error:", err);
         setError(err.message || "Connection failed");
         setIsConnecting(false);
       });
@@ -113,19 +120,19 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       });
 
       newSocket.on("reconnect_error", (err) => {
-        console.error("Socket reconnection error:", err);
+        // console.error("Socket reconnection error:", err);
         setError(err.message || "Reconnection failed");
       });
 
       newSocket.on("reconnect_failed", () => {
-        console.error("Socket reconnection failed");
+        // console.error("Socket reconnection failed");
         setError("Failed to reconnect. Please check your connection.");
       });
 
       socketRef.current = newSocket;
       setSocket(newSocket);
     } catch (err) {
-      console.error("Error creating socket connection:", err);
+      // console.error("Error creating socket connection:", err);
       setError(err instanceof Error ? err.message : "Failed to connect");
       setIsConnecting(false);
     }
@@ -207,4 +214,3 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 };
 
 export default SocketContext;
-

@@ -35,7 +35,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10167",
     fullName: "Chinwe Felicia, Ugwumba",
     email: "chinwe@outcess.com",
-    phone: "0809",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "A",
@@ -45,7 +45,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10234",
     fullName: "George Atuk Atuk, George",
     email: "george.atck@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "B",
@@ -55,7 +55,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "10398",
     fullName: "Emmanuel, Omonigho",
     email: "emmanuelo@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "A",
@@ -65,7 +65,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "10399",
     fullName: "Ugochukwu, Asuzu",
     email: "ugochuwuasuzu@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "A",
@@ -75,7 +75,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10398",
     fullName: "Emmanuel, Omonigho",
     email: "emmanuelolo@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "B",
@@ -85,7 +85,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10541",
     fullName: "Amarachi, Okoro",
     email: "amarachi.okoro@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "C",
@@ -95,7 +95,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10542",
     fullName: "Victoria, Falade",
     email: "jadesola.ayeni@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "QA",
     supervisor: "Motunrayo Adelanwaa",
     team: "QA",
@@ -105,7 +105,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10572",
     fullName: "Mariam Opeyemi, Balogun",
     email: "mariamobalogun@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "A",
@@ -115,7 +115,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     id: "agent.10573",
     fullName: "Elizabeth Fikayo, Babalola",
     email: "elizabethbabalola@outcess.com",
-    phone: "admin.01",
+    phone: "08098765432",
     role: "Agent",
     supervisor: "Motunrayo Adelanwaa",
     team: "A",
@@ -126,7 +126,10 @@ const TEAM_MEMBERS: TeamMember[] = [
 export default function TeamMembersScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
-  const styles = useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
+  const styles = useMemo(
+    () => createStyles(palette, colorScheme),
+    [palette, colorScheme]
+  );
 
   const [query, setQuery] = useState("");
   const [selectedSupervisor, setSelectedSupervisor] =
@@ -146,7 +149,9 @@ export default function TeamMembersScreen() {
 
   // Extract all unique supervisors from the data
   const allSupervisors = useMemo(() => {
-    const supervisors = new Set(TEAM_MEMBERS.map((member) => member.supervisor));
+    const supervisors = new Set(
+      TEAM_MEMBERS.map((member) => member.supervisor)
+    );
     return ["All Supervisors", ...Array.from(supervisors).sort()];
   }, []);
 
@@ -235,57 +240,23 @@ export default function TeamMembersScreen() {
           </View>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-          <DataTable style={[styles.table, { minWidth: 1000 }]}>
-            <DataTable.Header>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.idColumn}
-              >
+        <View style={{ flexDirection: "row" }}>
+          {/* Sticky Agent ID Column */}
+          <DataTable style={[styles.table, { width: 140 }]}>
+            <DataTable.Header style={{ backgroundColor: palette.lightGray }}>
+              <DataTable.Title textStyle={styles.columnLabel}>
                 Agent ID
-              </DataTable.Title>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.nameColumn}
-              >
-                Full Name
-              </DataTable.Title>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.emailColumn}
-              >
-                Email
-              </DataTable.Title>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.phoneColumn}
-              >
-                Phone No
-              </DataTable.Title>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.roleColumn}
-              >
-                Role
-              </DataTable.Title>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.supervisorColumn}
-              >
-                Supervisor
-              </DataTable.Title>
-              <DataTable.Title
-                textStyle={styles.columnLabel}
-                style={styles.statusColumn}
-              >
-                Logged In Status
               </DataTable.Title>
             </DataTable.Header>
 
             {paginated.map((member) => (
               <DataTable.Row
                 key={member.id}
-                style={{ borderBottomWidth: 1, borderBottomColor: palette.mediumGray }}
+                style={{
+                  borderBottomWidth: 1,
+                  borderBottomColor: palette.mediumGray,
+                  backgroundColor: palette.lightGray,
+                }}
               >
                 <DataTable.Cell
                   textStyle={styles.rowText}
@@ -293,62 +264,117 @@ export default function TeamMembersScreen() {
                 >
                   {member.id}
                 </DataTable.Cell>
-                <DataTable.Cell
-                  textStyle={styles.rowText}
+              </DataTable.Row>
+            ))}
+          </DataTable>
+
+          {/* Scrollable Remaining Columns */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <DataTable style={[styles.table, { minWidth: 860 }]}>
+              <DataTable.Header>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
                   style={styles.nameColumn}
                 >
-                  {member.fullName}
-                </DataTable.Cell>
-                <DataTable.Cell
-                  textStyle={styles.rowText}
+                  Full Name
+                </DataTable.Title>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
                   style={styles.emailColumn}
                 >
-                  {member.email}
-                </DataTable.Cell>
-                <DataTable.Cell
-                  textStyle={styles.rowText}
+                  Email
+                </DataTable.Title>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
                   style={styles.phoneColumn}
                 >
-                  {member.phone}
-                </DataTable.Cell>
-                <DataTable.Cell
-                  textStyle={styles.rowText}
+                  Phone No
+                </DataTable.Title>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
                   style={styles.roleColumn}
                 >
-                  {member.role}
-                </DataTable.Cell>
-                <DataTable.Cell
-                  textStyle={styles.rowText}
+                  Role
+                </DataTable.Title>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
                   style={styles.supervisorColumn}
                 >
-                  {member.supervisor}
-                </DataTable.Cell>
-                <DataTable.Cell style={styles.statusColumn}>
-                  <View
+                  Supervisor
+                </DataTable.Title>
+                <DataTable.Title
+                  textStyle={styles.columnLabel}
+                  style={styles.statusColumn}
+                >
+                  Logged In Status
+                </DataTable.Title>
+              </DataTable.Header>
+
+              {paginated.map((member) => (
+                <DataTable.Row
+                  key={member.id}
+                  style={{
+                    borderBottomWidth: 1,
+                    borderBottomColor: palette.mediumGray,
+                  }}
+                >
+                  <DataTable.Cell
+                    textStyle={styles.rowText}
+                    style={styles.nameColumn}
+                  >
+                    {member.fullName}
+                  </DataTable.Cell>
+                  <DataTable.Cell
+                    textStyle={styles.rowText}
+                    style={styles.emailColumn}
+                  >
+                    {member.email}
+                  </DataTable.Cell>
+                  <DataTable.Cell
+                    textStyle={styles.rowText}
+                    style={styles.phoneColumn}
+                  >
+                    {member.phone}
+                  </DataTable.Cell>
+                  <DataTable.Cell
+                    textStyle={styles.rowText}
+                    style={styles.roleColumn}
+                  >
+                    {member.role}
+                  </DataTable.Cell>
+                  <DataTable.Cell
+                    textStyle={styles.rowText}
+                    style={styles.supervisorColumn}
+                  >
+                    {member.supervisor}
+                  </DataTable.Cell>
+                  <DataTable.Cell
                     style={[
+                      styles.statusColumn,
                       styles.statusPill,
                       member.status === "Logged In"
                         ? styles.statusLoggedIn
                         : styles.statusLoggedOut,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.statusPillText,
-                        member.status === "Logged In"
-                          ? styles.statusPillTextLoggedIn
-                          : styles.statusPillTextLoggedOut,
-                      ]}
-                    >
-                      {member.status}
-                    </Text>
-                  </View>
-                </DataTable.Cell>
-              </DataTable.Row>
-            ))}
-
-          </DataTable>
-        </ScrollView>
+                    <View>
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          member.status === "Logged In"
+                            ? styles.statusPillTextLoggedIn
+                            : styles.statusPillTextLoggedOut,
+                        ]}
+                      >
+                        {member.status}
+                      </Text>
+                    </View>
+                  </DataTable.Cell>
+                </DataTable.Row>
+              ))}
+            </DataTable>
+          </ScrollView>
+        </View>
 
         <DataTable.Pagination
           page={page}
@@ -366,8 +392,14 @@ export default function TeamMembersScreen() {
               primary: palette.interactivePrimary,
               text: palette.textPrimary,
               placeholder: palette.textSecondary,
-              backdrop: colorScheme === "dark" ? palette.background : palette.accentWhite,
-              surface: colorScheme === "dark" ? palette.bgPrimary : palette.accentWhite,
+              backdrop:
+                colorScheme === "dark"
+                  ? palette.background
+                  : palette.accentWhite,
+              surface:
+                colorScheme === "dark"
+                  ? palette.bgPrimary
+                  : palette.accentWhite,
               onSurface: palette.textPrimary,
             },
           }}
@@ -388,7 +420,10 @@ export default function TeamMembersScreen() {
           onPress={() => setShowSupervisorModal(false)}
         >
           <TouchableOpacity
-            style={[styles.modalContent, { backgroundColor: palette.accentWhite }]}
+            style={[
+              styles.modalContent,
+              { backgroundColor: palette.accentWhite },
+            ]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -404,13 +439,18 @@ export default function TeamMembersScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+            >
               {allSupervisors.map((supervisor) => (
                 <TouchableOpacity
                   key={supervisor}
                   style={[
                     styles.modalOption,
-                    selectedSupervisor === supervisor && { backgroundColor: palette.offWhite2 },
+                    selectedSupervisor === supervisor && {
+                      backgroundColor: palette.offWhite2,
+                    },
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -426,7 +466,8 @@ export default function TeamMembersScreen() {
                           selectedSupervisor === supervisor
                             ? palette.interactivePrimary
                             : palette.textPrimary,
-                        fontWeight: selectedSupervisor === supervisor ? "600" : "400",
+                        fontWeight:
+                          selectedSupervisor === supervisor ? "600" : "400",
                       },
                     ]}
                   >
@@ -449,7 +490,10 @@ export default function TeamMembersScreen() {
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
+const createStyles = (
+  palette: (typeof Colors)["light"],
+  colorScheme: "light" | "dark"
+) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -482,7 +526,9 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
       minWidth: 220,
     },
     filterSelectors: {
+      width: "100%",
       flexDirection: "row",
+      justifyContent: "flex-end",
       gap: 12,
     },
     selectButton: {
@@ -536,7 +582,7 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
       textTransform: "uppercase",
       color: palette.textSecondary,
       letterSpacing: 0.5,
-      paddingHorizontal: 8,
+      paddingHorizontal: 5,
     },
     rowText: {
       fontSize: 14,
@@ -546,58 +592,61 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
     },
     idColumn: {
       flex: 1.2,
-      minWidth: 120,
+      minWidth: 140,
       paddingHorizontal: 8,
     },
     nameColumn: {
       flex: 1.8,
-      minWidth: 150,
+      minWidth: 180,
       paddingHorizontal: 8,
     },
     emailColumn: {
       flex: 2,
-      minWidth: 200,
+      minWidth: 240,
       paddingHorizontal: 8,
     },
     phoneColumn: {
       flex: 1,
-      minWidth: 100,
+      minWidth: 120,
       paddingHorizontal: 8,
     },
     roleColumn: {
       flex: 1,
-      minWidth: 80,
+      minWidth: 120,
       paddingHorizontal: 8,
     },
     supervisorColumn: {
       flex: 1.5,
-      minWidth: 150,
+      minWidth: 180,
       paddingHorizontal: 8,
     },
     statusColumn: {
       flex: 1.1,
-      minWidth: 120,
+      minWidth: 140,
       justifyContent: "center",
       paddingHorizontal: 8,
     },
+
     statusPill: {
       paddingHorizontal: 12,
       paddingVertical: 6,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 1,
+      // borderWidth: 1,
     },
     statusLoggedIn: {
-      backgroundColor: colorScheme === "dark"
-        ? "rgba(108, 139, 125, 0.2)"
-        : "rgba(108, 139, 125, 0.1)",
-      borderColor: palette.statusSuccess,
+      backgroundColor:
+        colorScheme === "dark"
+          ? "rgba(108, 139, 125, 0.2)"
+          : "rgba(108, 139, 125, 0.1)",
+      // borderColor: palette.statusSuccess,
     },
     statusLoggedOut: {
-      backgroundColor: colorScheme === "dark"
-        ? "rgba(220, 53, 69, 0.2)"
-        : "rgba(220, 53, 69, 0.1)",
-      borderColor: palette.statusError,
+      backgroundColor:
+        colorScheme === "dark"
+          ? "rgba(220, 53, 69, 0.2)"
+          : "rgba(220, 53, 69, 0.1)",
+      // borderColor: palette.statusError,
     },
     statusPillText: {
       fontSize: 12,

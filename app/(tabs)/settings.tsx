@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -13,11 +12,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AnimatedHeader from "@/components/AnimatedHeader";
+import CustomAlert from "@/components/CustomAlert";
 import TextField from "@/components/forms/TextField";
+import PageTitle from "@/components/PageTitle";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { router } from "expo-router";
 
 const TABS = [
   { id: "profile", label: "Profile", icon: "person-outline" },
@@ -68,6 +70,8 @@ export default function SettingsScreen() {
   const isDarkMode = resolvedColorScheme === "dark";
   const { signOut } = useAuth();
 
+  const [showAlert, setShowAlert] = React.useState(false);
+
   // 👇 Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -92,7 +96,10 @@ export default function SettingsScreen() {
     confirmPassword: false,
   });
 
-  const styles = useMemo(() => createStyles(palette, colorScheme), [palette, colorScheme]);
+  const styles = useMemo(
+    () => createStyles(palette, colorScheme),
+    [palette, colorScheme]
+  );
 
   useEffect(() => {
     if (activeTab !== "profile" && isEditing) {
@@ -107,33 +114,15 @@ export default function SettingsScreen() {
     }));
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            await signOut();
-            router.replace("/auth/login");
-          },
-        },
-      ]
-    );
+  const handleLogout = () => {
+    setShowAlert(true); // show the custom alert
   };
 
   const renderProfileTab = () => (
     <>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderContent}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <PageTitle title={"Personal Information"} />
           <Text style={styles.sectionSubtitle}>
             Update your personal details and contact information.
           </Text>
@@ -144,7 +133,7 @@ export default function SettingsScreen() {
             isEditing && {
               backgroundColor: "transparent",
               borderWidth: 1,
-              borderColor: palette.interactivePrimary,
+              borderColor: palette.interactiveSecondary,
             },
           ]}
           onPress={() => setIsEditing((prev) => !prev)}
@@ -215,7 +204,7 @@ export default function SettingsScreen() {
     <View style={styles.passwordCard}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Change Password</Text>
+          <PageTitle title={"Change Password"} />
           <Text style={styles.sectionSubtitle}>
             Update your password to keep your account secure.
           </Text>
@@ -267,7 +256,7 @@ export default function SettingsScreen() {
     <View style={styles.preferencesCard}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Appearance</Text>
+          <PageTitle title={"Appearance"} />
           <Text style={styles.sectionSubtitle}>
             Customize the appearance of your application.
           </Text>
@@ -291,30 +280,18 @@ export default function SettingsScreen() {
             {isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
           </Text>
         </View>
-        <View style={styles.preferenceSwitch}>
-          <View
-            style={[
-              styles.switchTrack,
-              {
-                backgroundColor: isDarkMode
-                  ? palette.interactivePrimary
-                  : palette.offWhite2,
-                borderWidth: isDarkMode ? 0 : 1,
-                borderColor: isDarkMode ? "transparent" : palette.mediumGray,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.switchThumb,
-                {
-                  backgroundColor: palette.accentWhite,
-                  alignSelf: isDarkMode ? "flex-end" : "flex-start",
-                },
-              ]}
-            />
-          </View>
-        </View>
+        <Switch
+          value={isDarkMode}
+          onValueChange={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            toggleDarkMode();
+          }}
+          trackColor={{
+            false: palette.mediumGray,
+            true: palette.interactivePrimary,
+          }}
+          thumbColor={palette.accentWhite}
+        />
       </TouchableOpacity>
 
       <View style={styles.sectionHeader}>
@@ -332,7 +309,11 @@ export default function SettingsScreen() {
         onPress={handleLogout}
       >
         <View style={styles.logoutIcon}>
-          <Ionicons name="log-out-outline" size={20} color={palette.statusError} />
+          <Ionicons
+            name="log-out-outline"
+            size={20}
+            color={palette.statusError}
+          />
         </View>
         <View style={styles.preferenceContent}>
           <Text style={styles.logoutTitle}>Logout</Text>
@@ -340,7 +321,11 @@ export default function SettingsScreen() {
             Sign out of your account
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={palette.textSecondary} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={palette.textSecondary}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -361,7 +346,7 @@ export default function SettingsScreen() {
           { useNativeDriver: true }
         )}
       >
-        <Text style={styles.pageTitle}>Account Settings</Text>
+        <PageTitle title={"Account Settings"} />
         <Text style={styles.pageSubtitle}>
           Manage your account information, security, and payment methods.
         </Text>
@@ -401,11 +386,29 @@ export default function SettingsScreen() {
         {activeTab === "preferences" && renderPreferencesTab()}
       </Animated.ScrollView>
       <AnimatedHeader title="Account Settings" scrollY={scrollY} />
+
+      <CustomAlert
+        visible={showAlert}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        onConfirm={async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          await signOut();
+          router.replace("/auth/login");
+          setShowAlert(false);
+        }}
+        onCancel={() => setShowAlert(false)}
+      />
     </SafeAreaView>
   );
 }
 
-const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | "dark") =>
+const createStyles = (
+  palette: (typeof Colors)["light"],
+  colorScheme: "light" | "dark"
+) =>
   StyleSheet.create({
     sectionHeaderContent: {
       width: "60%",
@@ -637,9 +640,10 @@ const createStyles = (palette: (typeof Colors)["light"], colorScheme: "light" | 
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: colorScheme === "dark" 
-        ? "rgba(220, 53, 69, 0.3)" 
-        : "rgba(220, 53, 69, 0.2)",
+      borderColor:
+        colorScheme === "dark"
+          ? "rgba(220, 53, 69, 0.3)"
+          : "rgba(220, 53, 69, 0.2)",
     },
     logoutTitle: {
       fontSize: 15,

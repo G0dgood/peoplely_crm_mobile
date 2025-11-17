@@ -10,9 +10,24 @@ export const CUSTOMER_DETAILS = {
   middleName: "-",
   address: "-",
   history: [
-    { date: "April 7, 2025", time: "9:14 AM", agent: "John Doe", duration: "2m 23s" },
-    { date: "March 23, 2025", time: "8:30 AM", agent: "Jane Doe", duration: "1m 56s" },
-    { date: "March 23, 2025", time: "8:30 AM", agent: "Jane Doe", duration: "1m 56s" },
+    {
+      date: "April 7, 2025",
+      time: "9:14 AM",
+      agent: "John Doe",
+      duration: "2m 23s",
+    },
+    {
+      date: "March 23, 2025",
+      time: "8:30 AM",
+      agent: "Jane Doe",
+      duration: "1m 56s",
+    },
+    {
+      date: "March 23, 2025",
+      time: "8:30 AM",
+      agent: "Jane Doe",
+      duration: "1m 56s",
+    },
   ],
 };
 
@@ -27,7 +42,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       flex: 1,
       justifyContent: "center",
     },
-    container: { 
+    container: {
       padding: 24,
       gap: 20,
       maxHeight: "80%",
@@ -39,6 +54,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
     },
     closeButton: {
       position: "absolute",
+      zIndex: 200,
       top: 16,
       right: 16,
       width: 36,
@@ -108,7 +124,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       fontWeight: "600",
     },
     saveButton: {
-      backgroundColor: palette.interactivePrimary, 
+      backgroundColor: palette.interactivePrimary,
       paddingVertical: 10,
       paddingHorizontal: 24,
       borderWidth: 1,
@@ -145,7 +161,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       alignItems: "center",
       gap: 6,
       paddingHorizontal: 14,
-      paddingVertical: 8, 
+      paddingVertical: 8,
       backgroundColor: palette.bgSecondary,
       borderWidth: 1,
       borderColor: palette.mediumGray,
@@ -177,7 +193,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
     sectionCard: {
       borderRadius: 16,
       backgroundColor: palette.accentWhite,
-      padding: 20,
+      paddingVertical: 20,
       gap: 16,
       shadowColor: palette.shadowColor,
       shadowOpacity: 0.05,

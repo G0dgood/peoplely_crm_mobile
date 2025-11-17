@@ -1,8 +1,10 @@
+import AnimatedTabIcon from "@/components/AnimatedTabIcon";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
 import React from "react";
 
+import { DashboardIcon } from "@/components/icons/dashboardIcon";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -10,7 +12,7 @@ const TAB_ICONS: Record<
   "index" | "customer-book" | "team-members" | "report" | "settings",
   keyof typeof Ionicons.glyphMap
 > = {
-  index: "speedometer-outline",
+  index: "grid-outline",
   "customer-book": "book-outline",
   "team-members": "people-outline",
   report: "bar-chart-outline",
@@ -25,8 +27,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.interactivePrimary,
-        tabBarInactiveTintColor: palette.primaryLighter,
+        tabBarActiveTintColor: palette.tabIconSelected,
+        tabBarInactiveTintColor: palette.tabIconDefault,
         tabBarStyle: {
           backgroundColor: palette.background,
           borderTopColor: palette.mediumGray,
@@ -45,9 +47,12 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Dashboard",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={TAB_ICONS.index} color={color} size={20} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <DashboardIcon
+              size={size}
+              color={palette.tabIconSelected}
+              secondaryColor={""}
+            />
           ),
         }}
         listeners={{
@@ -60,12 +65,11 @@ export default function TabLayout() {
         name="customer-book"
         options={{
           title: "Customer Book",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
               name={TAB_ICONS["customer-book"]}
               color={color}
-              size={20}
+              focused={focused}
             />
           ),
         }}
@@ -79,12 +83,11 @@ export default function TabLayout() {
         name="team-members"
         options={{
           title: "Team Members",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
               name={TAB_ICONS["team-members"]}
               color={color}
-              size={size}
+              focused={focused}
             />
           ),
         }}
@@ -98,9 +101,12 @@ export default function TabLayout() {
         name="report"
         options={{
           title: "Report",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={TAB_ICONS.report} color={color} size={20} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
+              name={TAB_ICONS["report"]}
+              color={color}
+              focused={focused}
+            />
           ),
         }}
         listeners={{
@@ -113,9 +119,12 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Account",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={TAB_ICONS.settings} color={color} size={20} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
+              name={TAB_ICONS["settings"]}
+              color={color}
+              focused={focused}
+            />
           ),
         }}
         listeners={{
