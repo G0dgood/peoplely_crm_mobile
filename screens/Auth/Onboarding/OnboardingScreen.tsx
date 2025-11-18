@@ -27,22 +27,22 @@ type Slide = {
 
 const slides: Slide[] = [
   {
-    id: "streamline",
-    image: require("../../../assets/images/react-logo.png") as ImageSourcePropType,
-    title: "Streamlined Patient Management",
-    subtitle: "Manage patient appointments and records from one dashboard.",
+    id: "call-management",
+    image: require("../../../assets/images/call1.png") as ImageSourcePropType,
+    title: "Efficient Call Management",
+    subtitle: "Handle customer calls seamlessly with advanced call routing and tracking capabilities.",
   },
   {
-    id: "schedule",
-    image: require("../../../assets/images/react-logo.png") as ImageSourcePropType,
-    title: "Smart Scheduling",
-    subtitle: "Automated reminders help you balance your calendar with ease.",
+    id: "customer-interactions",
+    image: require("../../../assets/images/call2.png") as ImageSourcePropType,
+    title: "Track Customer Interactions",
+    subtitle: "Record and manage call dispositions, follow-ups, and customer history in one place.",
   },
   {
-    id: "connect",
-    image: require("../../../assets/images/react-logo.png") as ImageSourcePropType,
-    title: "Stay Connected",
-    subtitle: "Chat securely with patients and track progress in real time.",
+    id: "team-performance",
+    image: require("../../../assets/images/call3.png") as ImageSourcePropType,
+    title: "Monitor Team Performance",
+    subtitle: "Get real-time insights into call volumes, agent performance, and customer satisfaction metrics.",
   },
 ];
 
@@ -132,15 +132,15 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     },
     slide: {
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "flex-start",
       width,
       paddingHorizontal: width * 0.08,
     },
     onboardingImage: {
-      width: width * 0.7,
-      height: height * 0.35,
-      resizeMode: "contain",
-      marginBottom: height * 0.06,
+      width: width,
+      height: height * 0.6,
+      resizeMode: "cover",
+      marginBottom: height * 0.04,
     },
     textContainer: {
       paddingHorizontal: width * 0.04,
@@ -186,6 +186,7 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       shadowOpacity: 0.25,
       shadowRadius: 12,
       elevation: 4,
+      zIndex: 1000,
     },
     buttonText: {
       fontSize: 16,

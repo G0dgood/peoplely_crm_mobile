@@ -72,7 +72,7 @@ export default function SettingsScreen() {
 
   const [showAlert, setShowAlert] = React.useState(false);
 
-  // 👇 Animated scroll tracking
+  //  Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const [activeTab, setActiveTab] = useState<

@@ -191,9 +191,9 @@ export default function TeamMembersScreen() {
         )}
       >
         <PageTitle title="Team Members" />
-        <Text style={styles.subtitle}>
+        {/* <Text style={styles.subtitle}>
           Monitor agent login activity and supervisor assignments.
-        </Text>
+        </Text> */}
 
         <View style={styles.filterRow}>
           <SearchField

@@ -114,14 +114,7 @@ export default function CustomerDetailsModal() {
   // Combine and sort by date (newest first)
   const allHistory = useMemo(() => {
     const combined = [...staticHistory, ...dispositionHistory];
-    console.log(
-      "Combined history count:",
-      combined.length,
-      "Static:",
-      staticHistory.length,
-      "Stored:",
-      dispositionHistory.length
-    );
+
     return combined.sort((a, b) => {
       // Parse dates for comparison (simple string comparison for now)
       // In a real app, you'd want proper date parsing
@@ -161,16 +154,29 @@ export default function CustomerDetailsModal() {
             {/* <Text style={styles.title}></Text> */}
             <View style={styles.headerButtons}>
               <TouchableOpacity
-                style={styles.headerAction}
+                style={[
+                  styles.headerAction,
+                  {
+                    backgroundColor: palette.burntOrange,
+                    borderColor: palette.burntOrange,
+                  },
+                ]}
                 activeOpacity={0.7}
                 onPress={() => router.push("/modal/sms")}
               >
                 <Ionicons
                   name="chatbubble-outline"
                   size={16}
-                  color={palette.interactivePrimary}
+                  color={palette.textInverse}
                 />
-                <Text style={styles.headerActionText}>SMS</Text>
+                <Text
+                  style={[
+                    styles.headerActionText,
+                    { color: palette.textInverse },
+                  ]}
+                >
+                  SMS
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerActionPrimary}
@@ -281,7 +287,7 @@ export default function CustomerDetailsModal() {
                       entry.synced !== undefined ? entry.synced : true;
                     return (
                       <DataTable.Row
-                        key={entry.id || `entry-${index}`}
+                        key={entry.id ? `${entry.id}-${index}` : `entry-${from + index}`}
                         style={{
                           borderBottomWidth: 1,
                           borderBottomColor: palette.mediumGray,
@@ -358,34 +364,6 @@ export default function CustomerDetailsModal() {
                   })}
                 </DataTable>
               </ScrollView>
-              {/* <DataTable.Pagination
-                page={page}
-                numberOfPages={totalPages}
-                onPageChange={(page) => setPage(page)}
-                label={`${from + 1}-${to} of ${allHistory.length}`}
-                numberOfItemsPerPageList={numberOfItemsPerPageList}
-                numberOfItemsPerPage={itemsPerPage}
-                onItemsPerPageChange={onItemsPerPageChange}
-                showFastPaginationControls
-                selectPageDropdownLabel={"Rows per page"}
-                theme={{
-                  roundness: 0,
-                  colors: {
-                    primary: palette.interactivePrimary,
-                    text: palette.textPrimary,
-                    placeholder: palette.textSecondary,
-                    backdrop:
-                      colorScheme === "dark"
-                        ? palette.background
-                        : palette.accentWhite,
-                    surface:
-                      colorScheme === "dark"
-                        ? palette.bgPrimary
-                        : palette.accentWhite,
-                    onSurface: palette.textPrimary,
-                  },
-                }}
-              /> */}
             </View>
           </ScrollView>
         </View>

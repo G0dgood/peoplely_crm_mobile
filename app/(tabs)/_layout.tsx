@@ -1,12 +1,11 @@
+import AnimatedTabBar from "@/components/AnimatedTabBar";
 import AnimatedTabIcon from "@/components/AnimatedTabIcon";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
 import React from "react";
-
-import { DashboardIcon } from "@/components/icons/dashboardIcon";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const TAB_ICONS: Record<
   "index" | "customer-book" | "team-members" | "report" | "settings",
@@ -25,13 +24,18 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.tabIconSelected,
+        tabBarActiveTintColor:
+          colorScheme === "light" ? "#000000" : palette.tabIconSelected,
         tabBarInactiveTintColor: palette.tabIconDefault,
         tabBarStyle: {
           backgroundColor: palette.background,
-          borderTopColor: palette.mediumGray,
+          borderTopWidth: 0,
+          borderTopColor: "transparent",
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
           fontSize: 9,
@@ -48,10 +52,10 @@ export default function TabLayout() {
         options={{
           title: "Dashboard",
           tabBarIcon: ({ color, size, focused }) => (
-            <DashboardIcon
-              size={size}
-              color={palette.tabIconSelected}
-              secondaryColor={""}
+            <AnimatedTabIcon
+              name={TAB_ICONS["index"]}
+              color={color}
+              focused={false}
             />
           ),
         }}
@@ -69,7 +73,7 @@ export default function TabLayout() {
             <AnimatedTabIcon
               name={TAB_ICONS["customer-book"]}
               color={color}
-              focused={focused}
+              focused={false}
             />
           ),
         }}
@@ -87,7 +91,7 @@ export default function TabLayout() {
             <AnimatedTabIcon
               name={TAB_ICONS["team-members"]}
               color={color}
-              focused={focused}
+              focused={false}
             />
           ),
         }}
@@ -105,7 +109,7 @@ export default function TabLayout() {
             <AnimatedTabIcon
               name={TAB_ICONS["report"]}
               color={color}
-              focused={focused}
+              focused={false}
             />
           ),
         }}
@@ -123,7 +127,7 @@ export default function TabLayout() {
             <AnimatedTabIcon
               name={TAB_ICONS["settings"]}
               color={color}
-              focused={focused}
+              focused={false}
             />
           ),
         }}
