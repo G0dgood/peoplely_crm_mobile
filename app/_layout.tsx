@@ -121,7 +121,13 @@ function AppContent() {
         <NetworkStatusBanner />
         <Stack>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="auth/login" 
+            options={{ 
+              headerShown: false,
+              gestureEnabled: false
+            }} 
+          />
           <Stack.Screen
             name="auth/forgot-password"
             options={{ headerShown: false }}

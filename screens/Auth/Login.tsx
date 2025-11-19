@@ -10,9 +10,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
+import { PeoplelyLogo } from "@/assets/svg/PeoplelyLogo";
 import TextField from "@/components/forms/TextField";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,11 +63,17 @@ const Login = () => {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>
-          Let’s get you logged in to continue building your investment
-          portfolio.
-        </Text>
+        <View style={styles.logoContainer}>
+          <View style={styles.peoplelyTextContainer}>
+            <PeoplelyLogo width={40} />
+            <Text style={styles.peoplely}>Peoplely</Text>
+          </View>
+
+          <Text style={styles.subtitle}>
+            Let&apos;s get you logged in to continue building your investment
+            portfolio.
+          </Text>
+        </View>
       </View>
 
       <View style={styles.form}>
@@ -97,12 +104,13 @@ const Login = () => {
         />
 
         <TouchableOpacity
+          style={styles.forgotpassword}
           onPress={() => {
             router.push("/auth/forgot-password");
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }}
         >
-          <Text style={styles.forgotPassword}>I forgot my password</Text>
+          <Text style={styles.forgotpasswordText}>I forgot my password</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -119,15 +127,7 @@ const Login = () => {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Don’t have an account?</Text>
-        <TouchableOpacity
-          onPress={() => {
-            router.push("/auth/signup");
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }}
-        >
-          <Text style={styles.footerLink}>Sign up</Text>
-        </TouchableOpacity>
+        <Text style={styles.footerText}>Powered by ProductLap</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -135,20 +135,48 @@ const Login = () => {
 
 const createStyles = (palette: (typeof Colors)["light"]) =>
   StyleSheet.create({
+
+    forgotpasswordText: {
+      fontSize: 14,
+      color: palette.primary,
+      fontWeight: "500",
+    },
+
+    forgotpassword: {
+      flexDirection: "row",
+      justifyContent: "flex-end"
+    },
+
+    peoplely: {
+      color: palette.textPrimary,
+      fontSize: 28,
+      fontWeight: "600",
+      letterSpacing: 0.4,
+      marginLeft: 8,
+    },
+
+    peoplelyTextContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
     container: {
       flex: 1,
       backgroundColor: palette.background,
       paddingHorizontal: 24,
-      paddingTop: 80,
+      paddingTop: 60,
     },
     header: {
       marginBottom: 48,
     },
-    title: {
-      fontSize: 28,
-      fontWeight: "600",
-      color: palette.textPrimary,
-      marginBottom: 12,
+    logoContainer: {
+      alignItems: "flex-start",
+      justifyContent: "flex-start",
+      // marginBottom: 12,
+    },
+    logo: {
+      width: 120,
+      height: 60,
+      // marginBottom: 12,
     },
     subtitle: {
       fontSize: 15,

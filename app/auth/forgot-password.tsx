@@ -19,10 +19,10 @@ export default function ForgotPasswordScreen() {
         Forgot password
       </Text>
       <Text style={[styles.subtitle, { color: palette.textSecondary }]}>
-        This screen is a placeholder. Replace with your password recovery flow.
+        Please contact your administrator to reset your password.
       </Text>
 
-      <TouchableOpacity style={[styles.button, { backgroundColor: palette.primary }]} onPress={handleBack}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: palette.interactivePrimary, borderColor: palette.interactivePrimary, shadowColor: palette.shadowColor }]} onPress={handleBack}>
         <Text style={[styles.buttonText, { color: palette.textInverse }]}>Go back</Text>
       </TouchableOpacity>
     </View>
@@ -47,9 +47,15 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 12,
-    borderRadius: 0,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    height: 52,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   buttonText: {
     fontSize: 16,

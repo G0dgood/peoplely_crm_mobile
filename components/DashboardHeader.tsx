@@ -1,49 +1,19 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import * as Haptics from "expo-haptics";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import StatusBadge from "@/components/StatusBadge";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const STATUS_OPTIONS = [
-  {
-    id: "available",
-    label: "Available/Ready",
-    icon: "checkmark-circle-outline",
-    color: "statusSuccess",
-  },
-  {
-    id: "busy",
-    label: "Busy On Call",
-    icon: "call-outline",
-    color: "statusError",
-  },
-  {
-    id: "acw",
-    label: "After Call Work (ACW)",
-    icon: "document-text-outline",
-    color: "statusWarning",
-  },
-  { id: "away", label: "Away", icon: "time-outline", color: "statusInfo" },
-  {
-    id: "break",
-    label: "On Break",
-    icon: "cafe-outline",
-    color: "interactivePrimary",
-  },
-  {
-    id: "meeting",
-    label: "In a Meeting",
-    icon: "people-outline",
-    color: "interactiveSecondary",
-  },
-];
+const PROFILE_IMAGE_STORAGE_KEY = "@user_profile_image";
 
 interface DashboardHeaderProps {
   userName?: string;
   currentStatus: string;
-  onStatusPress: () => void;
+  onStatusPress: (statusId: string) => void;
   notificationCount?: number;
 }
 
@@ -56,6 +26,31 @@ export default function DashboardHeader({
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = React.useMemo(() => createStyles(palette), [palette]);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Load profile image on mount and when screen comes into focus
+  const loadProfileImage = useCallback(async () => {
+    try {
+      const savedImage = await AsyncStorage.getItem(PROFILE_IMAGE_STORAGE_KEY);
+      if (savedImage) {
+        setProfileImage(savedImage);
+      } else {
+        setProfileImage(null);
+      }
+    } catch (error) {
+      console.error("Error loading profile image:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProfileImage();
+  }, [loadProfileImage]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileImage();
+    }, [loadProfileImage])
+  );
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -64,16 +59,20 @@ export default function DashboardHeader({
     return "Good evening";
   };
 
-  const status = STATUS_OPTIONS.find((s) => s.id === currentStatus);
-
   return (
     <View style={styles.headerRow}>
       <View style={styles.headerMeta}>
-        <Ionicons
-          name="sunny-outline"
-          size={18}
-          color={palette.interactiveSecondary}
-        />
+        {profileImage ? (
+          <Image source={{ uri: profileImage }} style={styles.profileImage} />
+        ) : (
+          <View style={styles.profileImagePlaceholder}>
+            <Ionicons
+              name="person"
+              size={14}
+              color={palette.textSecondary}
+            />
+          </View>
+        )}
         <View>
           <Text style={[styles.headerText, { color: palette.textSecondary }]}>
             {getGreeting()}
@@ -86,31 +85,7 @@ export default function DashboardHeader({
         </View>
       </View>
       <View style={styles.headerActions}>
-        <TouchableOpacity
-          style={styles.statusBadge}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onStatusPress();
-          }}
-          activeOpacity={0.8}
-        >
-          <View
-            style={[
-              styles.statusDot,
-              {
-                backgroundColor:
-                  palette[status?.color as keyof typeof palette] ||
-                  palette.statusSuccess,
-              },
-            ]}
-          />
-          <Text
-            style={[styles.statusBadgeText, { color: palette.textPrimary }]}
-            numberOfLines={1}
-          >
-            {status?.label || "Available"}
-          </Text>
-        </TouchableOpacity>
+        <StatusBadge currentStatus={currentStatus} onStatusSelect={onStatusPress} />
         <TouchableOpacity
           style={styles.iconBadge}
           onPress={() => router.push("/notifications")}
@@ -151,12 +126,30 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       alignItems: "center",
       gap: 8,
     },
+    profileImage: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: palette.offWhite2,
+      borderWidth: 2,
+      borderColor: palette.mediumGray,
+    },
+    profileImagePlaceholder: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: palette.offWhite2,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 2,
+      borderColor: palette.mediumGray,
+    },
     headerText: {
       fontSize: 16,
       fontWeight: "500",
     },
     userName: {
-      fontSize: 18,
+      fontSize: 14,
       fontWeight: "600",
       marginTop: 2,
     },
@@ -164,30 +157,6 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
-    },
-    statusBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 0,
-      backgroundColor: palette.bgSecondary,
-      gap: 8,
-      marginRight: 8,
-      minWidth: 100,
-      height: 36,
-    },
-    statusDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: palette.accentWhite,
-    },
-    statusBadgeText: {
-      fontSize: 12,
-      fontWeight: "500",
-      maxWidth: 120,
     },
     iconBadge: {
       width: 36,

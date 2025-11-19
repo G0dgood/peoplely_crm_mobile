@@ -49,6 +49,18 @@ export default function AnimatedTabBar(props: BottomTabBarProps) {
   return (
     <View style={{ position: "relative" }}>
       <BottomTabBar {...props} />
+      {/* Top border for all tabs (inactive tabs) */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          backgroundColor: palette.mediumGray,
+        }}
+      />
+      {/* Active tab indicator (overlays the border) */}
       <Animated.View
         style={{
           position: "absolute",
