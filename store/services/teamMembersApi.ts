@@ -7,6 +7,10 @@ type TeamMemberLoginRequest = {
 };
 
 type TeamMemberLoginResponse = any;
+type TeamMemberLogoutRequest = {
+  userId: string;
+};
+type TeamMemberLogoutResponse = any;
 
 export const teamMembersApi = createApi({
   reducerPath: "teamMembersApi",
@@ -19,7 +23,16 @@ export const teamMembersApi = createApi({
         body: credentials,
       }),
     }),
+    logout: builder.mutation<TeamMemberLogoutResponse, TeamMemberLogoutRequest>(
+      {
+        query: (payload) => ({
+          url: "/api/v1/team-members/logout",
+          method: "POST",
+          body: payload,
+        }),
+      }
+    ),
   }),
 });
 
-export const { useLoginMutation } = teamMembersApi;
+export const { useLoginMutation, useLogoutMutation } = teamMembersApi;

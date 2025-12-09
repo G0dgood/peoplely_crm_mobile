@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import PageTitle from "./PageTitle";
 
@@ -20,6 +21,7 @@ type CustomAlertProps = {
   onConfirm?: (event: GestureResponderEvent) => void;
   onCancel?: (event: GestureResponderEvent) => void;
   hideCancel?: boolean;
+  confirmLoading?: boolean;
 };
 
 const CustomAlert: React.FC<CustomAlertProps> = ({
@@ -31,6 +33,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
   onConfirm,
   onCancel,
   hideCancel = false,
+  confirmLoading = false,
 }) => {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
@@ -71,13 +74,18 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
               style={styles.button}
               onPress={onConfirm}
               activeOpacity={0.8}
+              disabled={confirmLoading}
             >
               <View style={styles.confirmButton}>
-                <Text
-                  style={[styles.buttonText, { color: palette.statusError }]}
-                >
-                  {confirmText}
-                </Text>
+                {confirmLoading ? (
+                  <ActivityIndicator color={palette.statusError} />
+                ) : (
+                  <Text
+                    style={[styles.buttonText, { color: palette.statusError }]}
+                  >
+                    {confirmText}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
           </View>

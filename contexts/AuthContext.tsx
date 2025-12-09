@@ -1,4 +1,7 @@
-import { useLoginMutation } from "@/store/services/teamMembersApi";
+import {
+  useLoginMutation,
+  useLogoutMutation,
+} from "@/store/services/teamMembersApi";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type User = {
@@ -48,6 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [authData, setAuthData] = useState<any | null>(null);
   const [login] = useLoginMutation();
+  const [logoutApi] = useLogoutMutation();
 
   // Check for existing session on mount
   useEffect(() => {
@@ -138,8 +142,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      // TODO: Clear stored auth token/session
+      const tm = (authData && (authData.user || authData.teamMember)) || {};
+      const uid = tm.userId || tm.username || user?.email || user?.id || "";
+      if (uid) {
+        try {
+          await logoutApi({ userId: String(uid) }).unwrap();
+        } catch (_e) {}
+      }
       setUser(null);
+      setAuthData(null);
       setIsLoading(false);
     } catch (error) {
       console.error("Error signing out:", error);

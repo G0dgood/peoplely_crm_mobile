@@ -75,6 +75,7 @@ export default function SettingsScreen() {
   const { signOut, user, authData } = useAuth();
 
   const [showAlert, setShowAlert] = React.useState(false);
+  const [loggingOut, setLoggingOut] = React.useState(false);
 
   //  Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -84,10 +85,10 @@ export default function SettingsScreen() {
   >("profile");
   const [isEditing, setIsEditing] = useState(false);
   const [profileValues, setProfileValues] = useState({
-    fullName: "Jane Doe",
-    username: "janedoe",
-    phoneNumber: "+1 (555) 123-4567",
-    emailAddress: "jane.doe@example.com",
+    fullName: "",
+    username: "",
+    phoneNumber: "",
+    emailAddress: "",
   });
   const [passwordValues, setPasswordValues] = useState({
     currentPassword: "Secret!123",
@@ -111,6 +112,15 @@ export default function SettingsScreen() {
       setIsEditing(false);
     }
   }, [activeTab, isEditing]);
+
+  useEffect(() => {
+    const tm = (authData && (authData.user || authData.teamMember)) || {};
+    const fullName = (user && user.name) || tm.name || "";
+    const username = tm.username || tm.userId || (user && user.email) || "";
+    const phoneNumber = tm.phone || "";
+    const emailAddress = (user && user.email) || tm.email || "";
+    setProfileValues({ fullName, username, phoneNumber, emailAddress });
+  }, [user, authData]);
 
   // Load profile image on mount
   useEffect(() => {
@@ -460,13 +470,19 @@ export default function SettingsScreen() {
         message="Are you sure you want to logout?"
         confirmText="Logout"
         cancelText="Cancel"
+        confirmLoading={loggingOut}
         onConfirm={async () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          await signOut();
-          setShowAlert(false);
-          // Dismiss all modals and reset navigation stack
-          router.dismissAll();
-          router.replace("/auth/login");
+          try {
+            setLoggingOut(true);
+            await signOut();
+            setShowAlert(false);
+            // Dismiss all modals and reset navigation stack
+            router.dismissAll();
+            router.replace("/auth/login");
+          } finally {
+            setLoggingOut(false);
+          }
         }}
         onCancel={() => setShowAlert(false)}
       />
