@@ -1,10 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
+  Image,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -15,10 +18,10 @@ import AnimatedHeader from "@/components/AnimatedHeader";
 import CustomAlert from "@/components/CustomAlert";
 import TextField from "@/components/forms/TextField";
 import PageTitle from "@/components/PageTitle";
+import TripleSlider from "@/components/TripleSlider";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 
 const TABS = [
@@ -63,10 +66,11 @@ const PASSWORD_FIELDS = [
 const PROFILE_COPY =
   "Email changes require verification. Use the Email tab to update.";
 
+const PROFILE_IMAGE_STORAGE_KEY = "@user_profile_image";
+
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme() ?? "light";
-  const palette = Colors[colorScheme];
-  const { resolvedColorScheme, toggleDarkMode } = useTheme();
+  const { colorScheme, resolvedColorScheme, setColorScheme } = useTheme();
+  const palette = Colors[resolvedColorScheme];
   const isDarkMode = resolvedColorScheme === "dark";
   const { signOut, user, authData } = useAuth();
 
@@ -95,10 +99,11 @@ export default function SettingsScreen() {
     newPassword: false,
     confirmPassword: false,
   });
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const styles = useMemo(
-    () => createStyles(palette, colorScheme),
-    [palette, colorScheme]
+    () => createStyles(palette, resolvedColorScheme),
+    [palette, resolvedColorScheme]
   );
 
   useEffect(() => {
@@ -107,19 +112,64 @@ export default function SettingsScreen() {
     }
   }, [activeTab, isEditing]);
 
+  // Load profile image on mount
   useEffect(() => {
-    const tm =
-      (authData && (authData.teamMember || authData.user || authData.data)) ||
-      null;
-    setProfileValues((prev) => ({
-      ...prev,
-      fullName: tm?.name || user?.name || prev.fullName,
-      username: tm?.userId || user?.id || prev.username,
-      phoneNumber:
-        tm?.phoneNumber || tm?.phone || tm?.mobile || prev.phoneNumber,
-      emailAddress: tm?.email || user?.email || prev.emailAddress,
-    }));
-  }, [user, authData]);
+    const loadProfileImage = async () => {
+      try {
+        const savedImage = await AsyncStorage.getItem(
+          PROFILE_IMAGE_STORAGE_KEY
+        );
+        if (savedImage) {
+          setProfileImage(savedImage);
+        }
+      } catch (error) {
+        console.error("Error loading profile image:", error);
+      }
+    };
+    loadProfileImage();
+  }, []);
+
+  // Save profile image to AsyncStorage
+  const saveProfileImage = async (uri: string) => {
+    try {
+      await AsyncStorage.setItem(PROFILE_IMAGE_STORAGE_KEY, uri);
+      setProfileImage(uri);
+    } catch (error) {
+      console.error("Error saving profile image:", error);
+      Alert.alert("Error", "Failed to save profile image");
+    }
+  };
+
+  const handleImagePicker = async () => {
+    try {
+      // Request permissions
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please grant permission to access your photos"
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        await saveProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
+    }
+  };
 
   const togglePasswordVisibility = (key: keyof typeof passwordVisibility) => {
     setPasswordVisibility((prev) => ({
@@ -134,6 +184,29 @@ export default function SettingsScreen() {
 
   const renderProfileTab = () => (
     <>
+      {/* Profile Image Section */}
+      <View style={styles.profileImageContainer}>
+        <TouchableOpacity
+          style={styles.profileImageWrapper}
+          onPress={handleImagePicker}
+          activeOpacity={0.8}
+        >
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
+          ) : (
+            <View style={styles.profileImagePlaceholder}>
+              <Ionicons name="person" size={48} color={palette.textSecondary} />
+            </View>
+          )}
+          <View style={styles.profileImageEditBadge}>
+            <Ionicons name="camera" size={20} color={palette.textInverse} />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.profileImageHint}>
+          Tap to change profile picture
+        </Text>
+      </View>
+
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderContent}>
           <PageTitle title={"Personal Information"} />
@@ -266,83 +339,63 @@ export default function SettingsScreen() {
     </View>
   );
 
-  const renderPreferencesTab = () => (
-    <View style={styles.preferencesCard}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <PageTitle title={"Appearance"} />
-          <Text style={styles.sectionSubtitle}>
-            Customize the appearance of your application.
-          </Text>
+  const renderPreferencesTab = () => {
+    return (
+      <View style={styles.preferencesCard}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <PageTitle title={"Appearance"} />
+            <Text style={styles.sectionSubtitle}>
+              Customize the appearance of your application.
+            </Text>
+          </View>
         </View>
-      </View>
-
-      <TouchableOpacity
-        style={styles.preferenceRow}
-        activeOpacity={0.8}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          toggleDarkMode();
-        }}
-      >
-        <View style={styles.preferenceIcon}>
-          <Ionicons name="moon-outline" size={20} color={palette.textPrimary} />
-        </View>
-        <View style={styles.preferenceContent}>
-          <Text style={styles.preferenceTitle}>Dark Mode</Text>
-          <Text style={styles.preferenceSubtitle}>
-            {isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-          </Text>
-        </View>
-        <Switch
-          value={isDarkMode}
-          onValueChange={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            toggleDarkMode();
-          }}
-          trackColor={{
-            false: palette.mediumGray,
-            true: palette.interactivePrimary,
-          }}
-          thumbColor={palette.accentWhite}
-        />
-      </TouchableOpacity>
-
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <Text style={styles.sectionSubtitle}>
-            Manage your account settings.
-          </Text>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        style={styles.logoutRow}
-        activeOpacity={0.8}
-        onPress={handleLogout}
-      >
-        <View style={styles.logoutIcon}>
-          <Ionicons
-            name="log-out-outline"
-            size={20}
-            color={palette.statusError}
+        <View style={styles.themeSliderContainer}>
+          <TripleSlider
+            value={colorScheme}
+            onValueChange={(value) => {
+              setColorScheme(value);
+            }}
+            labels={["Light", "Auto", "Dark"]}
           />
         </View>
-        <View style={styles.preferenceContent}>
-          <Text style={styles.logoutTitle}>Logout</Text>
-          <Text style={styles.preferenceSubtitle}>
-            Sign out of your account
-          </Text>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Account</Text>
+            <Text style={styles.sectionSubtitle}>
+              Manage your account settings.
+            </Text>
+          </View>
         </View>
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={palette.textSecondary}
-        />
-      </TouchableOpacity>
-    </View>
-  );
+
+        <TouchableOpacity
+          style={styles.logoutRow}
+          activeOpacity={0.8}
+          onPress={handleLogout}
+        >
+          <View style={styles.logoutIcon}>
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color={palette.statusError}
+            />
+          </View>
+          <View style={styles.preferenceContent}>
+            <Text style={styles.logoutTitle}>Logout</Text>
+            <Text style={styles.preferenceSubtitle}>
+              Sign out of your account
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={palette.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView
@@ -410,8 +463,10 @@ export default function SettingsScreen() {
         onConfirm={async () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           await signOut();
-          router.replace("/auth/login");
           setShowAlert(false);
+          // Dismiss all modals and reset navigation stack
+          router.dismissAll();
+          router.replace("/auth/login");
         }}
         onCancel={() => setShowAlert(false)}
       />
@@ -483,6 +538,50 @@ const createStyles = (
       justifyContent: "space-between",
       width: "100%",
       gap: 16,
+    },
+    profileImageContainer: {
+      alignItems: "center",
+      marginBottom: 24,
+      gap: 12,
+    },
+    profileImageWrapper: {
+      position: "relative",
+      width: 120,
+      height: 120,
+    },
+    profileImage: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: palette.offWhite2,
+    },
+    profileImagePlaceholder: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: palette.offWhite2,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 2,
+      borderColor: palette.mediumGray,
+    },
+    profileImageEditBadge: {
+      position: "absolute",
+      bottom: 0,
+      right: 0,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: palette.interactivePrimary,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 3,
+      borderColor: palette.background,
+    },
+    profileImageHint: {
+      fontSize: 13,
+      color: palette.textSecondary,
+      textAlign: "center",
     },
     sectionTitle: {
       fontSize: 18,
@@ -591,6 +690,10 @@ const createStyles = (
       shadowOffset: { width: 0, height: 12 },
       shadowRadius: 24,
       elevation: 2,
+    },
+    themeSliderContainer: {
+      paddingVertical: 20,
+      alignItems: "center",
     },
     preferenceRow: {
       flexDirection: "row",

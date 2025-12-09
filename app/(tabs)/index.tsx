@@ -6,7 +6,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -17,7 +20,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import AnimatedHeader from "@/components/AnimatedHeader";
 import DashboardHeader from "@/components/DashboardHeader";
+import NoteCard from "@/components/NoteCard";
 import PageTitle from "@/components/PageTitle";
+import StatusBanner from "@/components/StatusBanner";
 import SwipeableCard from "@/components/SwipeableCard";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -122,6 +127,16 @@ export default function DashboardScreen() {
     loadStatus();
   }, []);
 
+  // Handle status selection
+  const handleStatusSelect = async (statusId: string) => {
+    try {
+      setCurrentStatus(statusId);
+      await AsyncStorage.setItem(STATUS_STORAGE_KEY, statusId);
+    } catch (error) {
+      console.error("Error saving status:", error);
+    }
+  };
+
   // Load saved widgets on mount
   useEffect(() => {
     const loadWidgets = async () => {
@@ -202,322 +217,351 @@ export default function DashboardScreen() {
 
   const cards = [...baseCards, ...pendingCard];
 
+  const noteCardRef = useRef<View>(null);
+  const noteCardY = useRef<number>(0);
+  const scrollViewInstance = useRef<any>(null);
+
+  // Scroll to note card when keyboard appears
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => {
+        // Small delay to ensure layout is complete
+        setTimeout(() => {
+          if (noteCardY.current > 0 && scrollViewInstance.current) {
+            scrollViewInstance.current.scrollTo({
+              y: noteCardY.current - 20, // Add some padding
+              animated: true,
+            });
+          }
+        }, 100);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: palette.background }]}
       edges={["top", "left", "right"]}
     >
       <StatusBar barStyle="light-content" translucent />
+      <StatusBanner currentStatus={currentStatus} />
 
-      {/* Scrollable content */}
-      <Animated.ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <PageTitle title="Dashboard" />
-        <DashboardHeader
-          userName={user?.name}
-          currentStatus={currentStatus}
-          onStatusPress={() => setShowStatusDropdown(true)}
-          notificationCount={notificationCount}
-        />
+        {/* Scrollable content */}
+        <Animated.ScrollView
+          ref={(ref) => {
+            scrollViewInstance.current = ref;
+          }}
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+        >
+          <PageTitle title="Dashboard" />
+          <DashboardHeader
+            userName={user?.name}
+            currentStatus={currentStatus}
+            onStatusPress={handleStatusSelect}
+            notificationCount={notificationCount}
+          />
 
-        <SwipeableCard cards={cards} />
+          <SwipeableCard cards={cards} />
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Charts</Text>
-        </View>
-
-        {selectedWidgets.length === 0 ? (
-          <View
-            style={[
-              styles.chartContainer,
-              styles.emptyChartContainer,
-              {
-                backgroundColor: palette.accentWhite,
-                borderColor: palette.mediumGray,
-              },
-            ]}
-          >
-            <Ionicons
-              name="bar-chart-outline"
-              size={64}
-              color={palette.textSecondary}
-            />
-            <Text
-              style={[styles.emptyChartText, { color: palette.textSecondary }]}
-            >
-              No charts added yet
-            </Text>
-            <Text
-              style={[
-                styles.emptyChartSubtext,
-                { color: palette.textSecondary },
-              ]}
-            >
-              Tap &quot;Add widget&quot; to add charts to your dashboard
-            </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Charts</Text>
           </View>
-        ) : (
-          selectedWidgets.map((widget) => (
+
+          {selectedWidgets.length === 0 ? (
             <View
-              key={widget.id}
               style={[
                 styles.chartContainer,
+                styles.emptyChartContainer,
                 {
                   backgroundColor: palette.accentWhite,
                   borderColor: palette.mediumGray,
                 },
               ]}
             >
-              {widget.type === "bar" ? (
-                <BarChart
-                  data={[28, 12, 45, 8, 32, 15, 20]}
-                  width={SCREEN_WIDTH * 0.8}
-                  height={220}
-                  primaryColor={palette.interactivePrimary}
-                  secondaryColor={palette.interactiveSecondary}
-                  labelColor={palette.textSecondary}
-                  axisColor={palette.mediumGray}
-                  backgroundColor={palette.accentWhite}
-                  showGrid={true}
-                  gridCount={5}
-                  showXAxisLabels={true}
-                  showYAxisLabels={true}
-                  formatLabel={(index: number) => {
-                    const labels = [
-                      "Mon",
-                      "Tue",
-                      "Wed",
-                      "Thu",
-                      "Fri",
-                      "Sat",
-                      "Sun",
-                    ];
-                    return labels[index] || "";
-                  }}
-                  style={styles.chart}
-                />
-              ) : widget.type === "line" ? (
-                <LineChart
-                  data={[28, 12, 45, 8, 32, 15, 20]}
-                  width={SCREEN_WIDTH * 0.8}
-                  height={220}
-                  lineColor={palette.interactivePrimary}
-                  labelColor={palette.textSecondary}
-                  axisColor={palette.mediumGray}
-                  backgroundColor={palette.accentWhite}
-                  showGrid={true}
-                  gridCount={5}
-                  showXAxisLabels={true}
-                  showYAxisLabels={true}
-                  formatLabel={(index: number) => {
-                    const labels = [
-                      "Mon",
-                      "Tue",
-                      "Wed",
-                      "Thu",
-                      "Fri",
-                      "Sat",
-                      "Sun",
-                    ];
-                    return labels[index] || "";
-                  }}
-                  style={styles.chart}
-                />
-              ) : widget.type === "pie" ? (
-                <PieChart
-                  data={[
-                    { value: 28, label: "Mon" },
-                    { value: 12, label: "Tue" },
-                    { value: 45, label: "Wed" },
-                    { value: 8, label: "Thu" },
-                    { value: 32, label: "Fri" },
-                    { value: 15, label: "Sat" },
-                    { value: 20, label: "Sun" },
-                  ]}
-                  width={SCREEN_WIDTH * 0.9}
-                  height={400}
-                  colors={[
-                    palette.interactivePrimary,
-                    palette.interactiveSecondary,
-                    palette.statusSuccess,
-                    palette.statusError,
-                    palette.statusWarning,
-                    palette.primaryLighter,
-                    palette.mediumGray,
-                  ]}
-                  showLabels={true}
-                  showPercentages={true}
-                  animate={true}
-                />
-              ) : widget.type === "doughnut" ? (
-                <PieChart
-                  data={[
-                    { value: 28, label: "Mon" },
-                    { value: 12, label: "Tue" },
-                    { value: 45, label: "Wed" },
-                    { value: 8, label: "Thu" },
-                    { value: 32, label: "Fri" },
-                    { value: 15, label: "Sat" },
-                    { value: 20, label: "Sun" },
-                  ]}
-                  width={SCREEN_WIDTH * 0.8}
-                  height={220}
-                  colors={[
-                    palette.interactivePrimary,
-                    palette.interactiveSecondary,
-                    palette.statusSuccess,
-                    palette.statusError,
-                    palette.statusWarning,
-                    palette.primaryLighter,
-                    palette.mediumGray,
-                  ]}
-                  showLabels={true}
-                  showPercentages={true}
-                  animate={true}
-                  strokeWidth={20}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.chartPlaceholder,
-                    { backgroundColor: palette.offWhite },
-                  ]}
-                >
-                  <Ionicons
-                    name={widget.icon}
-                    size={48}
-                    color={palette.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.chartPlaceholderText,
-                      { color: palette.textSecondary },
-                    ]}
-                  >
-                    {widget.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.chartPlaceholderSubtext,
-                      { color: palette.textSecondary },
-                    ]}
-                  >
-                    Chart type coming soon
-                  </Text>
-                </View>
-              )}
+              <Ionicons
+                name="bar-chart-outline"
+                size={64}
+                color={palette.textSecondary}
+              />
+              <Text
+                style={[styles.emptyChartText, { color: palette.textSecondary }]}
+              >
+                No charts added yet
+              </Text>
+              <Text
+                style={[
+                  styles.emptyChartSubtext,
+                  { color: palette.textSecondary },
+                ]}
+              >
+                Tap &quot;Add widget&quot; to add charts to your dashboard
+              </Text>
             </View>
-          ))
-        )}
-
-        {/* Status Dropdown Modal */}
-        <Modal
-          visible={showStatusDropdown}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowStatusDropdown(false)}
-        >
-          <TouchableOpacity
-            style={styles.statusModalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowStatusDropdown(false)}
-          >
-            <View
-              style={[
-                styles.statusDropdown,
-                {
-                  backgroundColor: palette.accentWhite,
-                  borderColor: palette.mediumGray,
-                },
-              ]}
-            >
-              {STATUS_OPTIONS.map((status) => {
-                const isSelected = currentStatus === status.id;
-                return (
-                  <TouchableOpacity
-                    key={status.id}
-                    style={[
-                      styles.statusOption,
-                      isSelected && { backgroundColor: palette.offWhite2 },
-                    ]}
-                    onPress={async () => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setCurrentStatus(status.id);
-                      try {
-                        await AsyncStorage.setItem(
-                          STATUS_STORAGE_KEY,
-                          status.id
-                        );
-                      } catch (error) {
-                        console.error("Error saving status:", error);
-                      }
-                      setShowStatusDropdown(false);
+          ) : (
+            selectedWidgets.map((widget) => (
+              <View
+                key={widget.id}
+                style={[
+                  styles.chartContainer,
+                  {
+                    backgroundColor: palette.accentWhite,
+                    borderColor: palette.mediumGray,
+                  },
+                ]}
+              >
+                {widget.type === "bar" ? (
+                  <BarChart
+                    data={[28, 12, 45, 8, 32, 15, 20]}
+                    width={SCREEN_WIDTH * 0.8}
+                    height={220}
+                    primaryColor={palette.interactivePrimary}
+                    secondaryColor={palette.interactiveSecondary}
+                    labelColor={palette.textSecondary}
+                    axisColor={palette.mediumGray}
+                    backgroundColor={palette.accentWhite}
+                    showGrid={true}
+                    gridCount={5}
+                    showXAxisLabels={true}
+                    showYAxisLabels={true}
+                    formatLabel={(index: number) => {
+                      const labels = [
+                        "Mon",
+                        "Tue",
+                        "Wed",
+                        "Thu",
+                        "Fri",
+                        "Sat",
+                        "Sun",
+                      ];
+                      return labels[index] || "";
                     }}
-                    activeOpacity={0.7}
+                    style={styles.chart}
+                  />
+                ) : widget.type === "line" ? (
+                  <LineChart
+                    data={[28, 12, 45, 8, 32, 15, 20]}
+                    width={SCREEN_WIDTH * 0.8}
+                    height={220}
+                    lineColor={palette.interactivePrimary}
+                    labelColor={palette.textSecondary}
+                    axisColor={palette.mediumGray}
+                    backgroundColor={palette.accentWhite}
+                    showGrid={true}
+                    gridCount={5}
+                    showXAxisLabels={true}
+                    showYAxisLabels={true}
+                    formatLabel={(index: number) => {
+                      const labels = [
+                        "Mon",
+                        "Tue",
+                        "Wed",
+                        "Thu",
+                        "Fri",
+                        "Sat",
+                        "Sun",
+                      ];
+                      return labels[index] || "";
+                    }}
+                    style={styles.chart}
+                  />
+                ) : widget.type === "pie" ? (
+                  <PieChart
+                    data={[
+                      { value: 28, label: "Mon" },
+                      { value: 12, label: "Tue" },
+                      { value: 45, label: "Wed" },
+                      { value: 8, label: "Thu" },
+                      { value: 32, label: "Fri" },
+                      { value: 15, label: "Sat" },
+                      { value: 20, label: "Sun" },
+                    ]}
+                    width={SCREEN_WIDTH * 0.9}
+                    height={400}
+                    colors={[
+                      palette.interactivePrimary,
+                      palette.interactiveSecondary,
+                      palette.statusSuccess,
+                      palette.statusError,
+                      palette.statusWarning,
+                      palette.primaryLighter,
+                      palette.mediumGray,
+                    ]}
+                    showLabels={true}
+                    showPercentages={true}
+                    animate={true}
+                  />
+                ) : widget.type === "doughnut" ? (
+                  <PieChart
+                    data={[
+                      { value: 28, label: "Mon" },
+                      { value: 12, label: "Tue" },
+                      { value: 45, label: "Wed" },
+                      { value: 8, label: "Thu" },
+                      { value: 32, label: "Fri" },
+                      { value: 15, label: "Sat" },
+                      { value: 20, label: "Sun" },
+                    ]}
+                    width={SCREEN_WIDTH * 0.8}
+                    height={220}
+                    colors={[
+                      palette.interactivePrimary,
+                      palette.interactiveSecondary,
+                      palette.statusSuccess,
+                      palette.statusError,
+                      palette.statusWarning,
+                      palette.primaryLighter,
+                      palette.mediumGray,
+                    ]}
+                    showLabels={true}
+                    showPercentages={true}
+                    animate={true}
+                    strokeWidth={20}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.chartPlaceholder,
+                      { backgroundColor: palette.offWhite },
+                    ]}
                   >
-                    <View
-                      style={[
-                        styles.statusOptionDot,
-                        {
-                          backgroundColor:
-                            palette[status.color as keyof typeof palette] ||
-                            palette.statusSuccess,
-                        },
-                      ]}
+                    <Ionicons
+                      name={widget.icon}
+                      size={48}
+                      color={palette.textSecondary}
                     />
                     <Text
                       style={[
-                        styles.statusOptionText,
-                        {
-                          color: isSelected
-                            ? palette.interactivePrimary
-                            : palette.textPrimary,
-                          fontWeight: isSelected ? "600" : "400",
-                        },
+                        styles.chartPlaceholderText,
+                        { color: palette.textSecondary },
                       ]}
                     >
-                      {status.label}
+                      {widget.name}
                     </Text>
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark"
-                        size={20}
-                        color={palette.interactivePrimary}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </TouchableOpacity>
-        </Modal>
+                    <Text
+                      style={[
+                        styles.chartPlaceholderSubtext,
+                        { color: palette.textSecondary },
+                      ]}
+                    >
+                      Chart type coming soon
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))
+          )}
 
-        <View style={styles.quoteCard}>
-          <Text style={styles.quoteHeading}>MY NOTE</Text>
-          <View style={styles.quoteRule} />
-          <Text style={styles.quoteBody}>
-            We have no intention of rotating capital out of strong multi-year
-            investments because they’ve recently done well or because ‘growth’
-            has out performed ‘value’.
-          </Text>
-          <Text style={styles.quoteAuthor}>Carl Sagan</Text>
-          <TouchableOpacity style={styles.quoteShare}>
-            <Ionicons
-              name="share-social-outline"
-              size={18}
-              color={palette.accentWhite}
-            />
-          </TouchableOpacity>
-        </View>
-      </Animated.ScrollView>
+          {/* Status Dropdown Modal */}
+          <Modal
+            visible={showStatusDropdown}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowStatusDropdown(false)}
+          >
+            <TouchableOpacity
+              style={styles.statusModalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowStatusDropdown(false)}
+            >
+              <View
+                style={[
+                  styles.statusDropdown,
+                  {
+                    backgroundColor: palette.accentWhite,
+                    borderColor: palette.mediumGray,
+                  },
+                ]}
+              >
+                {STATUS_OPTIONS.map((status) => {
+                  const isSelected = currentStatus === status.id;
+                  return (
+                    <TouchableOpacity
+                      key={status.id}
+                      style={[
+                        styles.statusOption,
+                        isSelected && { backgroundColor: palette.offWhite2 },
+                      ]}
+                      onPress={async () => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setCurrentStatus(status.id);
+                        try {
+                          await AsyncStorage.setItem(
+                            STATUS_STORAGE_KEY,
+                            status.id
+                          );
+                        } catch (error) {
+                          console.error("Error saving status:", error);
+                        }
+                        setShowStatusDropdown(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.statusOptionDot,
+                          {
+                            backgroundColor:
+                              palette[status.color as keyof typeof palette] ||
+                              palette.statusSuccess,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusOptionText,
+                          {
+                            color: isSelected
+                              ? palette.interactivePrimary
+                              : palette.textPrimary,
+                            fontWeight: isSelected ? "600" : "400",
+                          },
+                        ]}
+                      >
+                        {status.label}
+                      </Text>
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark"
+                          size={20}
+                          color={palette.interactivePrimary}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          <View
+            ref={noteCardRef}
+            onLayout={(event) => {
+              const { y } = event.nativeEvent.layout;
+              noteCardY.current = y;
+            }}
+          >
+            <NoteCard />
+          </View>
+        </Animated.ScrollView>
+      </KeyboardAvoidingView>
 
       {/*  Custom animated header (solid + instant appearance) */}
       <AnimatedHeader title="Dashboard" scrollY={scrollY} />
@@ -702,45 +746,5 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     planHighlightSubtitle: {
       fontSize: 14,
       color: palette.textSecondary,
-    },
-    quoteCard: {
-      padding: 24,
-      position: "relative",
-      backgroundColor: palette.mutedSageGreen,
-    },
-    quoteHeading: {
-      color: palette.textInverse,
-      fontSize: 12,
-      letterSpacing: 1.2,
-      fontWeight: "700",
-    },
-    quoteRule: {
-      width: 36,
-      height: 2,
-      backgroundColor: palette.textInverse,
-      marginVertical: 12,
-      opacity: 0.5,
-    },
-    quoteBody: {
-      color: palette.textInverse,
-      fontSize: 15,
-      lineHeight: 22,
-      marginBottom: 16,
-    },
-    quoteAuthor: {
-      color: palette.textInverse,
-      fontWeight: "600",
-      fontSize: 14,
-    },
-    quoteShare: {
-      position: "absolute",
-      bottom: 20,
-      right: 20,
-      width: 36,
-      height: 36,
-      borderRadius: 0,
-      backgroundColor: "rgba(255,255,255,0.15)",
-      alignItems: "center",
-      justifyContent: "center",
     },
   });

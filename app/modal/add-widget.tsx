@@ -324,7 +324,7 @@ export default function AddWidgetModal() {
               activeOpacity={0.7}
             >
               <Text style={styles.addButtonText}>
-                Add {selectedWidgets.length > 0 ? `(${selectedWidgets.length})` : ""}
+                {selectedWidgets.length > 0 ? `Add (${selectedWidgets.length})` : "Add"}
               </Text>
             </TouchableOpacity>
           </View>
