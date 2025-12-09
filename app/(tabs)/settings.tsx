@@ -68,7 +68,7 @@ export default function SettingsScreen() {
   const palette = Colors[colorScheme];
   const { resolvedColorScheme, toggleDarkMode } = useTheme();
   const isDarkMode = resolvedColorScheme === "dark";
-  const { signOut } = useAuth();
+  const { signOut, user, authData } = useAuth();
 
   const [showAlert, setShowAlert] = React.useState(false);
 
@@ -106,6 +106,20 @@ export default function SettingsScreen() {
       setIsEditing(false);
     }
   }, [activeTab, isEditing]);
+
+  useEffect(() => {
+    const tm =
+      (authData && (authData.teamMember || authData.user || authData.data)) ||
+      null;
+    setProfileValues((prev) => ({
+      ...prev,
+      fullName: tm?.name || user?.name || prev.fullName,
+      username: tm?.userId || user?.id || prev.username,
+      phoneNumber:
+        tm?.phoneNumber || tm?.phone || tm?.mobile || prev.phoneNumber,
+      emailAddress: tm?.email || user?.email || prev.emailAddress,
+    }));
+  }, [user, authData]);
 
   const togglePasswordVisibility = (key: keyof typeof passwordVisibility) => {
     setPasswordVisibility((prev) => ({

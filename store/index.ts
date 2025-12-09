@@ -7,6 +7,7 @@ import dispositionReducer from "./slices/dispositionSlice";
 import networkReducer from "./slices/networkSlice";
 import notificationReducer from "./slices/notificationSlice";
 import userReducer from "./slices/userSlice";
+import { teamMembersApi } from "./services/teamMembersApi";
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +16,7 @@ export const store = configureStore({
     network: networkReducer,
     notification: notificationReducer,
     user: userReducer,
+    [teamMembersApi.reducerPath]: teamMembersApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -22,7 +24,7 @@ export const store = configureStore({
         // Ignore these action types
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }),
+    }).concat(teamMembersApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,3 +1,4 @@
+import { useLoginMutation } from "@/store/services/teamMembersApi";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type User = {
@@ -14,6 +15,7 @@ type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  authData: any | null;
   signIn(email: string, password: string): Promise<AuthResult>;
   signUp(email: string, password: string, name?: string): Promise<AuthResult>;
   signOut(): Promise<void>;
@@ -23,6 +25,7 @@ const defaultValue: AuthContextValue = {
   user: null,
   isLoading: false,
   isAuthenticated: false,
+  authData: null,
   async signIn() {
     return { success: true };
   },
@@ -43,6 +46,8 @@ type AuthProviderProps = {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authData, setAuthData] = useState<any | null>(null);
+  const [login] = useLoginMutation();
 
   // Check for existing session on mount
   useEffect(() => {
@@ -66,26 +71,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ): Promise<AuthResult> => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual API call
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await login({ userId: email, password }).unwrap();
+      setAuthData(response);
 
-      // Mock successful login
-      const mockUser: User = {
-        id: "1",
-        email,
-        name: "User",
+      const resolvedEmail =
+        response?.user?.email || response?.teamMember?.email || email;
+      const resolvedId =
+        response?.user?.id ||
+        response?.user?._id ||
+        response?.teamMember?._id ||
+        email;
+      const resolvedName =
+        response?.user?.name || response?.teamMember?.name || undefined;
+
+      const nextUser: User = {
+        id: String(resolvedId),
+        email: String(resolvedEmail),
+        name: resolvedName,
       };
 
-      setUser(mockUser);
+      setUser(nextUser);
       setIsLoading(false);
-      return { success: true, user: mockUser };
+      return { success: true, user: nextUser };
     } catch (error) {
       setIsLoading(false);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Sign in failed",
-      };
+      const anyErr: any = error as any;
+      const message =
+        anyErr?.data?.message ||
+        anyErr?.error ||
+        anyErr?.message ||
+        "Sign in failed";
+      return { success: false, error: message };
     }
   };
 
@@ -135,6 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isLoading,
     isAuthenticated: !!user,
+    authData,
     signIn,
     signUp,
     signOut,
@@ -144,4 +161,3 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export default AuthContext;
-
