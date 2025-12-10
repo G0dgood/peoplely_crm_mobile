@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
 import { useAppSelector } from "@/store/hooks";
+import { useGetLineOfBusinessForTeamMemberQuery } from "@/store/services/teamMembersApi";
 // @ts-ignore
 import { AVAILABLE_WIDGETS } from "@/app/modal/add-widget";
 // @ts-ignore
@@ -80,6 +81,11 @@ export default function DashboardScreen() {
   const palette = Colors[colorScheme];
   const styles = React.useMemo(() => createStyles(palette), [palette]);
   const { user } = useAuth();
+  const {
+    data: lobData,
+    isLoading: lobLoading,
+    error: lobError,
+  } = useGetLineOfBusinessForTeamMemberQuery("693806b15eb41d3dbd71d442");
 
   //  Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -177,42 +183,62 @@ export default function DashboardScreen() {
   );
 
   // Build cards array - conditionally include "Pending Sync" only when there are pending items
-  const baseCards = [
-    {
-      type: "total",
-      label: "Total Calls",
-      value: "28",
-      icon: "call-outline",
-      color: palette.interactivePrimary,
-    },
-    {
-      type: "failed",
-      label: "Failed Call",
-      value: "12",
-      icon: "close-circle",
-      color: palette.statusError,
-    },
-    {
-      type: "successful",
-      label: "Successful",
-      value: "45",
-      icon: "checkmark-circle",
-      color: palette.statusSuccess,
-    },
-  ];
+  const apiWidgets = lobData?.lineOfBusiness?.dashboardSettings?.widgets || [];
+  const baseCards =
+    apiWidgets.length > 0
+      ? apiWidgets.map((w: any) => {
+          const title = String(w?.title || "").toLowerCase();
+          const icon = title.includes("total")
+            ? "call-outline"
+            : title.includes("fail")
+            ? "close-circle"
+            : title.includes("success")
+            ? "checkmark-circle"
+            : "bar-chart-outline";
+          return {
+            type: w?.id || title || "widget",
+            label: w?.title || "Widget",
+            value: String(w?.value ?? "0"),
+            icon,
+            color: w?.color || palette.interactivePrimary,
+          };
+        })
+      : [
+          {
+            type: "total",
+            label: "Total Calls",
+            value: "28",
+            icon: "call-outline",
+            color: palette.interactivePrimary,
+          },
+          {
+            type: "failed",
+            label: "Failed Call",
+            value: "12",
+            icon: "close-circle",
+            color: palette.statusError,
+          },
+          {
+            type: "successful",
+            label: "Successful",
+            value: "45",
+            icon: "checkmark-circle",
+            color: palette.statusSuccess,
+          },
+        ];
 
   // Only add "Pending Sync" card if there are pending dispositions
   const pendingCard =
     pendingCount > 0
       ? [
-        {
-          type: "pending",
-          label: "Pending Sync",
-          value: pendingCount.toString(),
-          icon: "time-outline",
-          color: palette.statusWarning,
-        },
-      ]
+          {
+            type: "pending",
+            label: "Pending Sync",
+            value: pendingCount.toString(),
+            icon: "time-outline",
+            color: palette.statusWarning,
+          },
+        ]
       : [];
 
   const cards = [...baseCards, ...pendingCard];
@@ -271,7 +297,12 @@ export default function DashboardScreen() {
             { useNativeDriver: true }
           )}
         >
-          <PageTitle title="Dashboard" />
+          <PageTitle
+            title={
+              lobData?.lineOfBusiness?.dashboardSettings?.dashboardName ||
+              "Dashboard"
+            }
+          />
           <DashboardHeader
             userName={user?.name}
             currentStatus={currentStatus}
@@ -282,7 +313,16 @@ export default function DashboardScreen() {
           <SwipeableCard cards={cards} />
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Charts</Text>
+            <Text style={styles.sectionTitle}>
+              {lobLoading
+                ? "Loading Charts"
+                : lobError
+                ? "Charts"
+                : lobData?.lineOfBusiness?.dashboardSettings?.activeTab ===
+                  "disposition"
+                ? "Dispositions"
+                : "Charts"}
+            </Text>
           </View>
 
           {selectedWidgets.length === 0 ? (
@@ -302,7 +342,10 @@ export default function DashboardScreen() {
                 color={palette.textSecondary}
               />
               <Text
-                style={[styles.emptyChartText, { color: palette.textSecondary }]}
+                style={[
+                  styles.emptyChartText,
+                  { color: palette.textSecondary },
+                ]}
               >
                 No charts added yet
               </Text>
@@ -419,8 +462,8 @@ export default function DashboardScreen() {
                       { value: 15, label: "Sat" },
                       { value: 20, label: "Sun" },
                     ]}
-                    width={SCREEN_WIDTH * 0.8}
-                    height={220}
+                    width={SCREEN_WIDTH * 0.9}
+                    height={400}
                     colors={[
                       palette.interactivePrimary,
                       palette.interactiveSecondary,
@@ -433,7 +476,7 @@ export default function DashboardScreen() {
                     showLabels={true}
                     showPercentages={true}
                     animate={true}
-                    strokeWidth={20}
+                    // strokeWidth={2 0}
                   />
                 ) : (
                   <View

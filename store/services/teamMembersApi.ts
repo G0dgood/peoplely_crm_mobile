@@ -11,6 +11,7 @@ type TeamMemberLogoutRequest = {
   userId: string;
 };
 type TeamMemberLogoutResponse = any;
+type LineOfBusinessResponse = any;
 
 export const teamMembersApi = createApi({
   reducerPath: "teamMembersApi",
@@ -32,7 +33,20 @@ export const teamMembersApi = createApi({
         }),
       }
     ),
+    getLineOfBusinessForTeamMember: builder.query<
+      LineOfBusinessResponse,
+      string
+    >({
+      query: (id) => ({
+        url: `/api/v1/line-of-business/team-member/${id}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation } = teamMembersApi;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useGetLineOfBusinessForTeamMemberQuery,
+} = teamMembersApi;
