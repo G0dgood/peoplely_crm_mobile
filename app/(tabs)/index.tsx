@@ -29,7 +29,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
 import { useAppSelector } from "@/store/hooks";
-import { useGetLineOfBusinessForTeamMemberQuery } from "@/store/services/teamMembersApi";
+import {
+  useGetLineOfBusinessForTeamMemberQuery,
+  useGetStatusesByLineOfBusinessQuery,
+} from "@/store/services/teamMembersApi";
 // @ts-ignore
 import { AVAILABLE_WIDGETS } from "@/app/modal/add-widget";
 // @ts-ignore
@@ -42,39 +45,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const WIDGET_STORAGE_KEY = "@dashboard_selected_widgets";
 const STATUS_STORAGE_KEY = "@user_status";
 
-const STATUS_OPTIONS = [
-  {
-    id: "available",
-    label: "Available/Ready",
-    icon: "checkmark-circle-outline",
-    color: "statusSuccess",
-  }, // Green
-  {
-    id: "busy",
-    label: "Busy On Call",
-    icon: "call-outline",
-    color: "statusError",
-  }, // Red
-  {
-    id: "acw",
-    label: "After Call Work (ACW)",
-    icon: "document-text-outline",
-    color: "statusWarning",
-  }, // Orange
-  { id: "away", label: "Away", icon: "time-outline", color: "statusInfo" }, // Gray/Blue
-  {
-    id: "break",
-    label: "On Break",
-    icon: "cafe-outline",
-    color: "interactivePrimary",
-  }, // Dark Blue/Orange
-  {
-    id: "meeting",
-    label: "In a Meeting",
-    icon: "people-outline",
-    color: "interactiveSecondary",
-  }, // Sage Green
-];
+// Status options are fetched live from API; no local defaults
 
 export default function DashboardScreen() {
   const colorScheme = useColorScheme() ?? "light";
@@ -86,6 +57,11 @@ export default function DashboardScreen() {
     isLoading: lobLoading,
     error: lobError,
   } = useGetLineOfBusinessForTeamMemberQuery("693806b15eb41d3dbd71d442");
+  const {
+    data: statusesData,
+    isLoading: statusesLoading,
+    error: statusesError,
+  } = useGetStatusesByLineOfBusinessQuery("693806b15eb41d3dbd71d442");
 
   //  Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -533,7 +509,12 @@ export default function DashboardScreen() {
                   },
                 ]}
               >
-                {STATUS_OPTIONS.map((status) => {
+                {(statusesData?.statuses || []).map((s: any) => {
+                  const status = {
+                    id: String(s?.statusId || s?._id || s?.name || ""),
+                    label: String(s?.name || ""),
+                    colorHex: s?.color as string | undefined,
+                  };
                   const isSelected = currentStatus === status.id;
                   return (
                     <TouchableOpacity
@@ -562,8 +543,7 @@ export default function DashboardScreen() {
                           styles.statusOptionDot,
                           {
                             backgroundColor:
-                              palette[status.color as keyof typeof palette] ||
-                              palette.statusSuccess,
+                              status.colorHex || palette.statusSuccess,
                           },
                         ]}
                       />

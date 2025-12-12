@@ -1,43 +1,17 @@
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGetStatusesByLineOfBusinessQuery } from "@/store/services/teamMembersApi";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useMemo, useRef, useState } from "react";
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-const STATUS_OPTIONS = [
-  {
-    id: "available",
-    label: "Available/Ready",
-    icon: "checkmark-circle-outline",
-    color: "statusSuccess",
-  },
-  {
-    id: "busy",
-    label: "Busy On Call",
-    icon: "call-outline",
-    color: "statusError",
-  },
-  {
-    id: "acw",
-    label: "After Call Work (ACW)",
-    icon: "document-text-outline",
-    color: "statusWarning",
-  },
-  { id: "away", label: "Away", icon: "time-outline", color: "statusInfo" },
-  {
-    id: "break",
-    label: "On Break",
-    icon: "cafe-outline",
-    color: "interactivePrimary",
-  },
-  {
-    id: "meeting",
-    label: "In a Meeting",
-    icon: "people-outline",
-    color: "interactiveSecondary",
-  },
-];
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface StatusBadgeProps {
   currentStatus: string;
@@ -61,22 +35,33 @@ export default function StatusBadge({
   const [menuWidth, setMenuWidth] = useState<number>(200);
   const badgeRef = useRef<View>(null);
 
-  const status = STATUS_OPTIONS.find((s) => s.id === currentStatus);
+  const { data: statusesData } = useGetStatusesByLineOfBusinessQuery(
+    "693806b15eb41d3dbd71d442"
+  );
+  const apiStatuses =
+    (statusesData?.statuses || []).map((s: any) => ({
+      id: String(s?.statusId || s?._id || s?.name || ""),
+      label: String(s?.name || ""),
+      colorHex: s?.color as string | undefined,
+    })) || [];
+  const status = apiStatuses.find((s: any) => s.id === currentStatus);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // Reset menu width when opening
     setMenuWidth(200);
     // Measure badge position in window coordinates before showing menu
-    badgeRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-      setBadgeLayout({
-        x,
-        y,
-        width,
-        height,
-      });
-      setShowMenu(true);
-    });
+    badgeRef.current?.measureInWindow(
+      (x: number, y: number, width: number, height: number) => {
+        setBadgeLayout({
+          x,
+          y,
+          width,
+          height,
+        });
+        setShowMenu(true);
+      }
+    );
   };
 
   const handleStatusSelect = (statusId: string) => {
@@ -85,7 +70,9 @@ export default function StatusBadge({
     setShowMenu(false);
   };
 
-  const handleMenuItemLayout = (event: { nativeEvent: { layout: { width: number } } }) => {
+  const handleMenuItemLayout = (event: {
+    nativeEvent: { layout: { width: number } };
+  }) => {
     const { width } = event.nativeEvent.layout;
     setMenuWidth((prevWidth) => Math.max(prevWidth, width));
   };
@@ -102,9 +89,7 @@ export default function StatusBadge({
             style={[
               styles.statusDot,
               {
-                backgroundColor:
-                  palette[status?.color as keyof typeof palette] ||
-                  palette.statusSuccess,
+                backgroundColor: status?.colorHex || palette.statusSuccess,
               },
             ]}
           />
@@ -114,7 +99,7 @@ export default function StatusBadge({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {status?.label || "Available"}
+              {status?.label || ""}
             </Text>
           </View>
           <Ionicons
@@ -137,79 +122,82 @@ export default function StatusBadge({
           activeOpacity={1}
           onPress={() => setShowMenu(false)}
         >
-          {badgeLayout && (() => {
-            const calculatedWidth = menuWidth > 250 ? menuWidth : 208;
-            const menuLeft = badgeLayout.x + badgeLayout.width - calculatedWidth;
-            return (
-              <View
-                style={[
-                  styles.menuContainer,
-                  {
-                    backgroundColor: palette.accentWhite,
-                    borderColor: palette.mediumGray,
-                    shadowColor: palette.shadowColor,
-                    position: "absolute",
-                    top: badgeLayout.y + badgeLayout.height + 4,
-                    left: menuLeft,
-                    width: menuWidth > 200 ? menuWidth : undefined,
-                    minWidth: 200,
-                    maxHeight: 350,
-                  },
-                ]}
-              >
-                <ScrollView
-                  style={styles.menuScrollView}
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator={true}
-                  contentContainerStyle={styles.menuContentContainer}
+          {badgeLayout &&
+            (() => {
+              const calculatedWidth = menuWidth > 250 ? menuWidth : 208;
+              const menuLeft =
+                badgeLayout.x + badgeLayout.width - calculatedWidth;
+              return (
+                <View
+                  style={[
+                    styles.menuContainer,
+                    {
+                      backgroundColor: palette.accentWhite,
+                      borderColor: palette.mediumGray,
+                      shadowColor: palette.shadowColor,
+                      position: "absolute",
+                      top: badgeLayout.y + badgeLayout.height + 4,
+                      left: menuLeft,
+                      width: menuWidth > 200 ? menuWidth : undefined,
+                      minWidth: 200,
+                      maxHeight: 350,
+                    },
+                  ]}
                 >
-                  <View onLayout={handleMenuItemLayout}>
-                    {STATUS_OPTIONS.map((option) => {
-                      const isSelected = currentStatus === option.id;
-                      const optionColor =
-                        palette[option.color as keyof typeof palette] ||
-                        palette.statusSuccess;
-                      return (
-                        <TouchableOpacity
-                          key={option.id}
-                          style={[
-                            styles.menuItem,
-                            isSelected && { backgroundColor: palette.offWhite2 },
-                          ]}
-                          onPress={() => handleStatusSelect(option.id)}
-                          activeOpacity={0.7}
-                        >
-                          <View
+                  <ScrollView
+                    style={styles.menuScrollView}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={true}
+                    contentContainerStyle={styles.menuContentContainer}
+                  >
+                    <View onLayout={handleMenuItemLayout}>
+                      {apiStatuses.map((option: any) => {
+                        const isSelected = currentStatus === option.id;
+                        const optionColor =
+                          option.colorHex || palette.statusSuccess;
+                        return (
+                          <TouchableOpacity
+                            key={option.id}
                             style={[
-                              styles.menuItemDot,
-                              { backgroundColor: optionColor },
+                              styles.menuItem,
+                              isSelected && {
+                                backgroundColor: palette.offWhite2,
+                              },
                             ]}
-                          />
-                          <Text
-                            style={[
-                              styles.menuItemText,
-                              { color: palette.textPrimary },
-                            ]}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
+                            onPress={() => handleStatusSelect(option.id)}
+                            activeOpacity={0.7}
                           >
-                            {option.label}
-                          </Text>
-                          {isSelected && (
-                            <Ionicons
-                              name="checkmark"
-                              size={18}
-                              color={palette.interactivePrimary}
+                            <View
+                              style={[
+                                styles.menuItemDot,
+                                { backgroundColor: optionColor },
+                              ]}
                             />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-              </View>
-            );
-          })()}
+                            <Text
+                              style={[
+                                styles.menuItemText,
+                                { color: palette.textPrimary },
+                              ]}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {option.label}
+                            </Text>
+                            {isSelected && (
+                              <Ionicons
+                                name="checkmark"
+                                size={18}
+                                color={palette.interactivePrimary}
+                              />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </View>
+              );
+            })()}
         </TouchableOpacity>
       </Modal>
     </>
@@ -294,4 +282,3 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       flexShrink: 1,
     },
   });
-

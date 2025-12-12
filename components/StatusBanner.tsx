@@ -1,44 +1,17 @@
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGetStatusesByLineOfBusinessQuery } from "@/store/services/teamMembersApi";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const STATUS_OPTIONS = [
-  {
-    id: "available",
-    label: "Available/Ready",
-    icon: "checkmark-circle-outline",
-    color: "statusSuccess",
-  },
-  {
-    id: "busy",
-    label: "Busy On Call",
-    icon: "call-outline",
-    color: "statusError",
-  },
-  {
-    id: "acw",
-    label: "After Call Work (ACW)",
-    icon: "document-text-outline",
-    color: "statusWarning",
-  },
-  { id: "away", label: "Away", icon: "time-outline", color: "statusInfo" },
-  {
-    id: "break",
-    label: "On Break",
-    icon: "cafe-outline",
-    color: "interactivePrimary",
-  },
-  {
-    id: "meeting",
-    label: "In a Meeting",
-    icon: "people-outline",
-    color: "interactiveSecondary",
-  },
-];
 
 interface StatusBannerProps {
   currentStatus: string;
@@ -48,6 +21,15 @@ export default function StatusBanner({ currentStatus }: StatusBannerProps) {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
+  const { data: statusesData } = useGetStatusesByLineOfBusinessQuery(
+    "693806b15eb41d3dbd71d442"
+  );
+  const apiStatuses =
+    (statusesData?.statuses || []).map((s: any) => ({
+      id: String(s?.statusId || s?._id || s?.name || ""),
+      label: String(s?.name || ""),
+      colorHex: s?.color as string | undefined,
+    })) || [];
 
   const [isVisible, setIsVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-100)).current;
@@ -56,9 +38,12 @@ export default function StatusBanner({ currentStatus }: StatusBannerProps) {
   const isInitialMountRef = useRef(true);
   const initializationTimeoutRef = useRef<number | null>(null);
 
-  const status = STATUS_OPTIONS.find((s) => s.id === currentStatus);
-  const statusColor =
-    palette[status?.color as keyof typeof palette] || palette.statusSuccess;
+  const status = apiStatuses.find(
+    (s: { id: string }) => s.id === currentStatus
+  );
+  const statusColor = status?.colorHex || palette.statusSuccess;
+  const statusIcon: keyof typeof Ionicons.glyphMap =
+    "information-circle-outline";
 
   const handleDismiss = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -149,13 +134,9 @@ export default function StatusBanner({ currentStatus }: StatusBannerProps) {
       <SafeAreaView edges={["top"]} style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.leftSection}>
-            <Ionicons
-              name={status.icon as keyof typeof Ionicons.glyphMap}
-              size={20}
-              color={palette.textInverse}
-            />
+            <Ionicons name={statusIcon} size={20} color={palette.textInverse} />
             <Text style={[styles.message, { color: palette.textInverse }]}>
-              {status.label}
+              {status?.label || ""}
             </Text>
           </View>
           <TouchableOpacity

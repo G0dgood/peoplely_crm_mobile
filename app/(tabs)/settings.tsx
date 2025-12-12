@@ -7,6 +7,8 @@ import {
   Alert,
   Animated,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,6 +24,11 @@ import TripleSlider from "@/components/TripleSlider";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { baseUrl } from "@/shared/baseUrl";
+import {
+  useLoginMutation,
+  useUpdateTeamMemberMutation,
+} from "@/store/services/teamMembersApi";
 import { router } from "expo-router";
 
 const TABS = [
@@ -73,6 +80,8 @@ export default function SettingsScreen() {
   const palette = Colors[resolvedColorScheme];
   const isDarkMode = resolvedColorScheme === "dark";
   const { signOut, user, authData } = useAuth();
+  const [verifyLogin] = useLoginMutation();
+  const [updateTeamMember] = useUpdateTeamMemberMutation();
 
   const [showAlert, setShowAlert] = React.useState(false);
   const [loggingOut, setLoggingOut] = React.useState(false);
@@ -91,7 +100,7 @@ export default function SettingsScreen() {
     emailAddress: "",
   });
   const [passwordValues, setPasswordValues] = useState({
-    currentPassword: "Secret!123",
+    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -101,6 +110,19 @@ export default function SettingsScreen() {
     confirmPassword: false,
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const scrollRef = useRef<any>(null);
+  const fieldPositions = useRef<Record<string, number>>({});
+  const anchors = useRef<{ profile: number; preferences: number }>({
+    profile: 0,
+    preferences: 0,
+  });
+  const scrollTo = (y: number) => {
+    if (!scrollRef.current) return;
+    try {
+      scrollRef.current.scrollTo({ y: Math.max(0, y - 24), animated: true });
+    } catch {}
+  };
 
   const styles = useMemo(
     () => createStyles(palette, resolvedColorScheme),
@@ -192,6 +214,92 @@ export default function SettingsScreen() {
     setShowAlert(true); // show the custom alert
   };
 
+  const handleUpdatePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordValues;
+    if (!currentPassword) {
+      Alert.alert(
+        "Password is required",
+        "Please enter your current password."
+      );
+      return;
+    }
+    if (!newPassword) {
+      Alert.alert("Password is required", "Please enter your new password.");
+      return;
+    }
+    if (!confirmPassword) {
+      Alert.alert(
+        "Confirm password is required",
+        "Please confirm your new password."
+      );
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Password mismatch", "New passwords do not match.");
+      return;
+    }
+    try {
+      setChangingPassword(true);
+      const tm = (authData && (authData.user || authData.teamMember)) || {};
+      const uid =
+        tm.userId ||
+        tm.username ||
+        user?.email ||
+        user?.id ||
+        profileValues.username;
+      await verifyLogin({
+        userId: String(uid),
+        password: currentPassword,
+      }).unwrap();
+      const memberId = String(tm._id || user?.id || "6938395a125676fa8ddccd65");
+      const resp = await fetch(
+        `${baseUrl}/api/v1/team-members/${memberId}/password`,
+        {
+          method: "PATCH",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPassword,
+            password: newPassword,
+          }),
+        }
+      );
+      const contentType = resp.headers.get("content-type") || "";
+      let data: any = null;
+      if (contentType.includes("application/json")) {
+        data = await resp.json();
+      } else {
+        const text = await resp.text();
+        data = { message: text };
+      }
+      if (!resp.ok) {
+        const msg =
+          data?.message ||
+          (typeof data === "string" ? data : "Password update failed");
+        throw new Error(msg);
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert("Success", "Password updated successfully.");
+      setPasswordValues({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.error ||
+        error?.message ||
+        "Password update failed";
+      Alert.alert("Error", message);
+      console.log(message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const renderProfileTab = () => (
     <>
       {/* Profile Image Section */}
@@ -217,7 +325,12 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
-      <View style={styles.sectionHeader}>
+      <View
+        style={styles.sectionHeader}
+        onLayout={(e) => {
+          anchors.current.profile = e.nativeEvent.layout.y;
+        }}
+      >
         <View style={styles.sectionHeaderContent}>
           <PageTitle title={"Personal Information"} />
           <Text style={styles.sectionSubtitle}>
@@ -233,7 +346,45 @@ export default function SettingsScreen() {
               borderColor: palette.interactiveSecondary,
             },
           ]}
-          onPress={() => setIsEditing((prev) => !prev)}
+          onPress={async () => {
+            const prev = isEditing;
+            setIsEditing((p) => !p);
+            if (prev) {
+              const tm =
+                (authData && (authData.user || authData.teamMember)) || {};
+              const memberId = String(
+                tm._id || user?.id || "6936a455d7ba9fe5f545abb8"
+              );
+              const name = profileValues.fullName?.trim();
+              const phone = profileValues.phoneNumber?.trim();
+              if (!name && !phone) {
+                Alert.alert("No changes", "Update your name or phone number.");
+                return;
+              }
+              try {
+                const resp = await updateTeamMember({
+                  id: memberId,
+                  name,
+                  phone,
+                }).unwrap();
+                const updated = resp?.teamMember || {};
+                setProfileValues((prevVals) => ({
+                  ...prevVals,
+                  fullName: updated.name ?? prevVals.fullName,
+                  phoneNumber: updated.phone ?? prevVals.phoneNumber,
+                }));
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                Alert.alert("Success", "Profile updated successfully.");
+              } catch (error: any) {
+                const message =
+                  error?.data?.message ||
+                  error?.error ||
+                  error?.message ||
+                  "Profile update failed";
+                Alert.alert("Error", message);
+              }
+            }
+          }}
         >
           <Text
             style={[
@@ -278,18 +429,38 @@ export default function SettingsScreen() {
 
       <View style={styles.formStack}>
         {PROFILE_FIELDS.map((field) => (
-          <TextField
+          <View
             key={field.key}
-            label={field.label}
-            value={profileValues[field.key as keyof typeof profileValues]}
-            placeholder={field.placeholder}
-            editable={isEditing}
-            onChangeText={(text) =>
-              setProfileValues((prev) => ({ ...prev, [field.key]: text }))
-            }
-            containerStyle={styles.formField}
-            style={[styles.input, !isEditing && styles.readOnlyInput]}
-          />
+            onLayout={(e) => {
+              fieldPositions.current[field.key] = e.nativeEvent.layout.y;
+            }}
+          >
+            <TextField
+              label={field.label}
+              value={profileValues[field.key as keyof typeof profileValues]}
+              placeholder={field.placeholder}
+              editable={
+                field.key === "username" || field.key === "emailAddress"
+                  ? false
+                  : isEditing
+              }
+              onChangeText={(text) =>
+                setProfileValues((prev) => ({ ...prev, [field.key]: text }))
+              }
+              containerStyle={styles.formField}
+              style={[
+                styles.input,
+                (field.key === "username" ||
+                  field.key === "emailAddress" ||
+                  !isEditing) &&
+                  styles.readOnlyInput,
+              ]}
+              onFocus={() => {
+                const y = fieldPositions.current[field.key];
+                if (typeof y === "number") scrollTo(y);
+              }}
+            />
+          </View>
         ))}
       </View>
 
@@ -343,15 +514,29 @@ export default function SettingsScreen() {
         })}
       </View>
 
-      <TouchableOpacity style={styles.passwordButton}>
-        <Text style={styles.passwordButtonText}>Update Password</Text>
+      <TouchableOpacity
+        style={styles.passwordButton}
+        onPress={handleUpdatePassword}
+        disabled={changingPassword}
+        activeOpacity={0.8}
+      >
+        {changingPassword ? (
+          <Text style={styles.passwordButtonText}>Updating...</Text>
+        ) : (
+          <Text style={styles.passwordButtonText}>Update Password</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
 
   const renderPreferencesTab = () => {
     return (
-      <View style={styles.preferencesCard}>
+      <View
+        style={styles.preferencesCard}
+        onLayout={(e) => {
+          anchors.current.preferences = e.nativeEvent.layout.y;
+        }}
+      >
         <View style={styles.sectionHeader}>
           <View>
             <PageTitle title={"Appearance"} />
@@ -413,55 +598,75 @@ export default function SettingsScreen() {
       edges={["top", "left", "right"]}
     >
       {/* Scrollable content */}
-      <Animated.ScrollView
+      <KeyboardAvoidingView
         style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <PageTitle title={"Account Settings"} />
-        <Text style={styles.pageSubtitle}>
-          Manage your account information, security, and payment methods.
-        </Text>
+        <Animated.ScrollView
+          ref={scrollRef}
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          keyboardShouldPersistTaps="handled"
+        >
+          <PageTitle title={"Account Settings"} />
+          <Text style={styles.pageSubtitle}>
+            Manage your account information, security, and payment methods.
+          </Text>
 
-        <View style={styles.tabs}>
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                onPress={() => setActiveTab(tab.id as typeof activeTab)}
-                style={[styles.tabButton, isActive && styles.tabButtonActive]}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={tab.icon as keyof typeof Ionicons.glyphMap}
-                  size={18}
-                  color={isActive ? palette.primary : palette.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    {
-                      color: isActive ? palette.primary : palette.textSecondary,
-                    },
-                  ]}
+          <View style={styles.tabs}>
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  onPress={() => {
+                    setActiveTab(tab.id as typeof activeTab);
+                    const y =
+                      tab.id === "profile"
+                        ? anchors.current.profile
+                        : tab.id === "preferences"
+                        ? anchors.current.preferences
+                        : 0;
+                    if (typeof y === "number") {
+                      setTimeout(() => scrollTo(y), 0);
+                    }
+                  }}
+                  style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                  activeOpacity={0.8}
                 >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                  <Ionicons
+                    name={tab.icon as keyof typeof Ionicons.glyphMap}
+                    size={18}
+                    color={isActive ? palette.primary : palette.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      {
+                        color: isActive
+                          ? palette.primary
+                          : palette.textSecondary,
+                      },
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-        {activeTab === "profile" && renderProfileTab()}
-        {activeTab === "password" && renderPasswordTab()}
-        {activeTab === "preferences" && renderPreferencesTab()}
-      </Animated.ScrollView>
+          {activeTab === "profile" && renderProfileTab()}
+          {activeTab === "password" && renderPasswordTab()}
+          {activeTab === "preferences" && renderPreferencesTab()}
+        </Animated.ScrollView>
+      </KeyboardAvoidingView>
       <AnimatedHeader title="Account Settings" scrollY={scrollY} />
 
       <CustomAlert
