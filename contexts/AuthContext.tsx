@@ -3,7 +3,13 @@ import {
   useLogoutMutation,
 } from "@/store/services/teamMembersApi";
 import { setCredentials } from "@/store/slices/authSlice";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useDispatch } from "react-redux";
 
 type User = {
@@ -12,6 +18,14 @@ type User = {
   name?: string;
   roleName?: string;
 };
+
+// Authentication tokens
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  tokenType?: string;
+}
 
 type AuthResult =
   | { success: true; user?: User }
@@ -25,20 +39,44 @@ type AuthContextValue = {
   signIn(email: string, password: string): Promise<AuthResult>;
   signUp(email: string, password: string, name?: string): Promise<AuthResult>;
   signOut(): Promise<void>;
+
+  updateUser: (updates: Partial<User>) => void;
 };
+
+// Auth context type
+interface AuthContextType {
+  // User state
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+
+  // Authentication methods
+  updateUser: (updates: Partial<User>) => void;
+
+  // Token management
+  getAccessToken: () => string | null;
+  getRefreshToken: () => string | null;
+  setTokens: (tokens: AuthTokens) => void;
+  clearTokens: () => void;
+
+  // Session management
+  checkAuth: () => Promise<boolean>;
+  validateToken: () => boolean;
+}
 
 const defaultValue: AuthContextValue = {
   user: null,
   isLoading: false,
   isAuthenticated: false,
   authData: null,
+  updateUser: () => {},
   async signIn() {
     return { success: true };
   },
   async signUp() {
     return { success: true };
   },
-  async signOut() { },
+  async signOut() {},
 };
 
 const AuthContext = createContext<AuthContextValue>(defaultValue);
@@ -47,15 +85,20 @@ export const useAuth = () => useContext(AuthContext);
 
 type AuthProviderProps = {
   children: React.ReactNode;
+  storageKey?: string;
 };
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({
+  children,
+  storageKey = "auth_data",
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authData, setAuthData] = useState<any | null>(null);
   const [login] = useLoginMutation();
   const [logoutApi] = useLogoutMutation();
   const dispatch = useDispatch();
+  const [tokens, setTokensState] = useState<AuthTokens | null>(null);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -92,9 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const resolvedName =
         response?.user?.name || response?.teamMember?.name || undefined;
       const resolvedRoleName =
-        response?.teamMember?.role?.roleName ||
-        response?.user?.role ||
-        "agent";
+        response?.teamMember?.role?.roleName || response?.user?.role || "agent";
 
       const nextUser: User = {
         id: String(resolvedId),
@@ -169,7 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (uid) {
         try {
           await logoutApi({ userId: String(uid) }).unwrap();
-        } catch (_e) { }
+        } catch (_e) {}
       }
       setUser(null);
       setAuthData(null);
@@ -180,6 +221,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Save auth data to localStorage
+  const saveAuthData = useCallback(
+    (userData: User | null, tokenData: AuthTokens | null) => {
+      if (typeof window === "undefined") return;
+
+      try {
+        if (userData && tokenData) {
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              user: userData,
+              tokens: tokenData,
+            })
+          );
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      } catch (error) {
+        console.error("Error saving auth data to storage:", error);
+      }
+    },
+    [storageKey]
+  );
+
+  // Update user
+  const updateUser = useCallback(
+    (updates: Partial<User>) => {
+      if (user) {
+        const updatedUser = { ...user, ...updates };
+        setUser(updatedUser);
+        if (tokens) {
+          saveAuthData(updatedUser, tokens);
+        }
+      }
+    },
+    [user, tokens, saveAuthData]
+  );
+
   const value: AuthContextValue = {
     user,
     isLoading,
@@ -188,6 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signUp,
     signOut,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

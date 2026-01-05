@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TextInput,
   TextInputProps,
+  TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
@@ -24,17 +25,24 @@ const SearchField = forwardRef<TextInput, SearchFieldProps>(
 
     return (
       <View style={[styles.container, containerStyle]}>
-        <Ionicons
-          name="search-outline"
-          size={18}
-          color={palette.primaryLighter}
-        />
         <TextInput
           ref={ref}
           style={[styles.input, style]}
           placeholderTextColor={palette.primaryLighter}
           {...textInputProps}
         />
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#000000", // Default fallback
+            padding: 8,
+          }}
+        >
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color={palette.primaryLighter}
+          />
+        </TouchableOpacity>
       </View>
     );
   }
