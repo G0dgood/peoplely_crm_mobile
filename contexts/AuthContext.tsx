@@ -114,6 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const dispatch = useDispatch();
   const [tokens, setTokensState] = useState<AuthTokens | null>(null);
 
+  console.log("user----->", user);
+
   useEffect(() => {
     const loadAuthData = async () => {
       try {
@@ -180,6 +182,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         roleName: resolvedRoleName,
         roleId: undefined
       };
+
+      // Extract and save privileges
+      if (response?.teamMember?.role || response?.user?.role) {
+        const roleData = response?.teamMember?.role || response?.user?.role;
+        // Ensure roleData has the expected structure or wrap it
+        const roleObj = typeof roleData === 'string' ? { roleName: roleData, permissions: [] } : roleData;
+
+        const privileges = {
+          userId: String(resolvedId),
+          roleId: roleObj._id || roleObj.id || "",
+          role: roleObj
+        };
+
+        try {
+          await AsyncStorage.setItem("userPrivileges", JSON.stringify(privileges));
+        } catch (e) {
+          console.error("Failed to save privileges", e);
+        }
+      }
 
       setUser(nextUser);
       setTokensState({ accessToken: response.accessToken });
@@ -263,6 +284,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setTokensState(null);
       await AsyncStorage.removeItem("peoplely-user");
       await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("userPrivileges");
       await AsyncStorage.removeItem(storageKey);
       setIsLoading(false);
     } catch (error) {

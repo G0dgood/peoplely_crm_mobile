@@ -1,6 +1,7 @@
 import AnimatedTabBar from "@/components/AnimatedTabBar";
 import AnimatedTabIcon from "@/components/AnimatedTabIcon";
 import { Colors } from "@/constants/theme";
+import { usePrivilege } from "@/contexts/PrivilegeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -21,6 +22,34 @@ const TAB_ICONS: Record<
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
+  const { canAccess } = usePrivilege();
+
+  const moduleMapping: Record<string, "dashboard" | "customerBook" | "teamMembers" | "report" | "systemSetting"> = {
+    index: "dashboard",
+    "customer-book": "customerBook",
+    "team-members": "teamMembers",
+    report: "report",
+    settings: "systemSetting",
+  };
+
+  const navItems: { id: keyof typeof TAB_ICONS; label: string }[] = [
+    { id: "index", label: "Dashboard" },
+    { id: "customer-book", label: "Customer Book" },
+    { id: "team-members", label: "Team Members" },
+    { id: "report", label: "Report" },
+    { id: "settings", label: "Account" },
+  ];
+
+  const visibleNavItems: { id: keyof typeof TAB_ICONS; label: string }[] = [];
+
+  navItems.forEach((item) => {
+    let isRestricted = false;
+    const moduleId = moduleMapping[item.id];
+    if (moduleId && !canAccess(moduleId, "view")) isRestricted = true;
+    if (!isRestricted) {
+      visibleNavItems.push(item);
+    }
+  });
 
   return (
     <Tabs
@@ -47,96 +76,27 @@ export default function TabLayout() {
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedTabIcon
-              name={TAB_ICONS["index"]}
-              color={color}
-              focused={false}
-            />
-          ),
-        }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="customer-book"
-        options={{
-          title: "Customer Book",
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedTabIcon
-              name={TAB_ICONS["customer-book"]}
-              color={color}
-              focused={false}
-            />
-          ),
-        }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="team-members"
-        options={{
-          title: "Team Members",
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedTabIcon
-              name={TAB_ICONS["team-members"]}
-              color={color}
-              focused={false}
-            />
-          ),
-        }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="report"
-        options={{
-          title: "Report",
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedTabIcon
-              name={TAB_ICONS["report"]}
-              color={color}
-              focused={false}
-            />
-          ),
-        }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Account",
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedTabIcon
-              name={TAB_ICONS["settings"]}
-              color={color}
-              focused={false}
-            />
-          ),
-        }}
-        listeners={{
-          tabPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        }}
-      />
+      {navItems.map((item) => {
+        const isVisible = item.id === "settings" || visibleNavItems.some((v) => v.id === item.id);
+        return (
+          <Tabs.Screen
+            key={item.id}
+            name={item.id}
+            options={{
+              href: isVisible ? undefined : null,
+              title: item.label,
+              tabBarIcon: ({ color }) => (
+                <AnimatedTabIcon name={TAB_ICONS[item.id]} color={color} />
+              ),
+            }}
+            listeners={{
+              tabPress: () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              },
+            }}
+          />
+        );
+      })}
     </Tabs>
   );
 }

@@ -7,13 +7,11 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 export type ModuleId =
   | "dashboard"
   | "customerBook"
-  | "userManagement"
   | "setupBook"
   | "customerSMS"
   | "report"
-  | "systemSetting"
-  | "auditLog"
-  | "teamMembers";
+  | "teamMembers"
+  | "systemSetting";
 
 export type PermissionAction = "view" | "create" | "edit" | "delete";
 
@@ -81,6 +79,8 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
           setUserPrivilegesState(JSON.parse(stored));
         } else if (initialPrivileges) {
           setUserPrivilegesState(initialPrivileges);
+        } else {
+          setUserPrivilegesState(null);
         }
       } catch {
         if (initialPrivileges) {
@@ -91,7 +91,7 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
       }
     };
     load();
-  }, [initialPrivileges]);
+  }, [initialPrivileges, user]);
 
   useEffect(() => {
     const save = async () => {
