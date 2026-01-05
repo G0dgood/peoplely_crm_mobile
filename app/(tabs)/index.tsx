@@ -39,6 +39,7 @@ import { AVAILABLE_WIDGETS } from "@/app/modal/add-widget";
 import { BarChart, LineChart } from "expo-charts";
 // @ts-ignore
 import PieChart from "expo-charts/dist/PieChart";
+import { router } from "expo-router";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -273,12 +274,37 @@ export default function DashboardScreen() {
             { useNativeDriver: true }
           )}
         >
-          <PageTitle
-            title={
-              lobData?.lineOfBusiness?.dashboardSettings?.dashboardName ||
-              "Dashboard"
-            }
-          />
+          <View style={styles.headerRow}>
+            <PageTitle
+              title={
+                lobData?.lineOfBusiness?.dashboardSettings?.dashboardName ||
+                "Dashboard"
+              }
+            />
+            <TouchableOpacity
+              style={styles.iconBadge}
+              onPress={() => router.push("/notifications")}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={18}
+                color={palette.interactiveSecondary}
+              />
+              {notificationCount > 0 && (
+                <View
+                  style={[
+                    styles.notificationBadge,
+                    { backgroundColor: palette.statusError },
+                  ]}
+                >
+                  <Text style={styles.notificationBadgeText}>
+                    {notificationCount > 99 ? "99+" : notificationCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
           <DashboardHeader
             userName={user?.name}
             currentStatus={currentStatus}
@@ -769,5 +795,37 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     planHighlightSubtitle: {
       fontSize: 14,
       color: palette.textSecondary,
+    },
+    iconBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: palette.bgSecondary,
+      position: "relative",
+    },
+    notificationBadge: {
+      position: "absolute",
+      top: 1,
+      right: 2,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 9,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 3,
+      borderWidth: 2,
+      borderColor: palette.accentWhite,
+    },
+    notificationBadgeText: {
+      color: palette.textInverse,
+      fontSize: 8,
+      fontWeight: "700",
+    },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
     },
   });

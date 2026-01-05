@@ -214,7 +214,6 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       borderRadius: 0,
       backgroundColor: palette.bgSecondary,
       gap: 8,
-      marginRight: 8,
       maxWidth: 150,
       minWidth: 140,
       height: 36,

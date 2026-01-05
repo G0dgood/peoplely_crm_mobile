@@ -65,7 +65,7 @@ const SearchField = forwardRef<TextInput, SearchFieldProps>(
           <Ionicons
             name="search-outline"
             size={18}
-            color={palette.primaryLighter}
+            color={palette.textInverse}
           />
         </TouchableOpacity>
       </View>
@@ -82,7 +82,8 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      paddingHorizontal: 16,
+      paddingRight: 8,
+      paddingLeft: 16,
       backgroundColor: palette.accentWhite,
       shadowColor: "#000",
       shadowOpacity: 0.05,
@@ -97,7 +98,7 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     },
     searchButton: {
       padding: 8,
-      backgroundColor: palette.primary,
+      backgroundColor: palette.interactivePrimary,
     },
   });
 

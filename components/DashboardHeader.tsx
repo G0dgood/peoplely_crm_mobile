@@ -4,9 +4,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 const PROFILE_IMAGE_STORAGE_KEY = "@user_profile_image";
 
@@ -66,11 +65,7 @@ export default function DashboardHeader({
           <Image source={{ uri: profileImage }} style={styles.profileImage} />
         ) : (
           <View style={styles.profileImagePlaceholder}>
-            <Ionicons
-              name="person"
-              size={14}
-              color={palette.textSecondary}
-            />
+            <Ionicons name="person" size={14} color={palette.textSecondary} />
           </View>
         )}
         <View>
@@ -84,32 +79,10 @@ export default function DashboardHeader({
           )}
         </View>
       </View>
-      <View style={styles.headerActions}>
-        <StatusBadge currentStatus={currentStatus} onStatusSelect={onStatusPress} />
-        <TouchableOpacity
-          style={styles.iconBadge}
-          onPress={() => router.push("/notifications")}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name="notifications-outline"
-            size={18}
-            color={palette.interactiveSecondary}
-          />
-          {notificationCount > 0 && (
-            <View
-              style={[
-                styles.notificationBadge,
-                { backgroundColor: palette.statusError },
-              ]}
-            >
-              <Text style={styles.notificationBadgeText}>
-                {notificationCount > 99 ? "99+" : notificationCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+      <StatusBadge
+        currentStatus={currentStatus}
+        onStatusSelect={onStatusPress}
+      />
     </View>
   );
 }
@@ -156,34 +129,5 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
     headerActions: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-    },
-    iconBadge: {
-      width: 36,
-      height: 36,
-      borderRadius: 0,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: palette.bgSecondary,
-      position: "relative",
-    },
-    notificationBadge: {
-      position: "absolute",
-      top: 1,
-      right: 2,
-      minWidth: 16,
-      height: 16,
-      borderRadius: 9,
-      justifyContent: "center",
-      alignItems: "center",
-      paddingHorizontal: 3,
-      borderWidth: 2,
-      borderColor: palette.accentWhite,
-    },
-    notificationBadgeText: {
-      color: palette.textInverse,
-      fontSize: 8,
-      fontWeight: "700",
     },
   });
-
