@@ -1,5 +1,86 @@
+// import { Ionicons } from "@expo/vector-icons";
+// import React, { forwardRef, useMemo } from "react";
+// import {
+//   StyleProp,
+//   StyleSheet,
+//   TextInput,
+//   TextInputProps,
+//   TouchableOpacity,
+//   View,
+//   ViewStyle,
+// } from "react-native";
+
+// import { Colors } from "@/constants/theme";
+// import { useColorScheme } from "@/hooks/use-color-scheme";
+
+// type SearchFieldProps = TextInputProps & {
+//   containerStyle?: StyleProp<ViewStyle>;
+// };
+
+// const SearchField = forwardRef<TextInput, SearchFieldProps>(
+//   ({ containerStyle, style, onSearch, value = "", ...textInputProps }, ref) => {
+//     const colorScheme = useColorScheme() ?? "light";
+//     const palette = Colors[colorScheme];
+//     const styles = useMemo(() => createStyles(palette), [palette]);
+
+//     return (
+//       <View style={[styles.container, containerStyle]}>
+//         <TextInput
+//           ref={ref}
+//           style={[styles.input, style]}
+//           placeholderTextColor={palette.primaryLighter}
+//           {...textInputProps}
+//         />
+//         <TouchableOpacity
+//           onPress={() => onSearch?.(value)}
+//           style={{
+//             backgroundColor: "#000000", // Default fallback
+//             padding: 8,
+//           }}
+//         >
+//           <Ionicons
+//             name="search-outline"
+//             size={18}
+//             color={palette.primaryLighter}
+//           />
+//         </TouchableOpacity>
+//       </View>
+//     );
+//   }
+// );
+
+// SearchField.displayName = "SearchField";
+
+// const createStyles = (palette: (typeof Colors)["light"]) =>
+//   StyleSheet.create({
+//     container: {
+//       height: 50,
+//       flexDirection: "row",
+//       alignItems: "center",
+//       gap: 8,
+//       paddingHorizontal: 16,
+//       paddingVertical: 2,
+//       backgroundColor: palette.accentWhite,
+//       shadowColor: "#000",
+//       shadowOpacity: 0.05,
+//       shadowOffset: { width: 0, height: 6 },
+//       shadowRadius: 12,
+//       elevation: 2,
+//     },
+//     input: {
+//       flex: 1,
+//       fontSize: 14,
+//       color: palette.textPrimary,
+//     },
+//   });
+
+// export default SearchField;
+// function onSearch(value: string) {
+//   throw new Error("Function not implemented.");
+// }
+
 import { Ionicons } from "@expo/vector-icons";
-import React, { forwardRef, useMemo } from "react";
+import React, { forwardRef, useMemo, useState } from "react";
 import {
   StyleProp,
   StyleSheet,
@@ -15,27 +96,52 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 
 type SearchFieldProps = TextInputProps & {
   containerStyle?: StyleProp<ViewStyle>;
+  onSearch?: (value: string) => void;
 };
 
 const SearchField = forwardRef<TextInput, SearchFieldProps>(
-  ({ containerStyle, style, ...textInputProps }, ref) => {
+  (
+    {
+      containerStyle,
+      style,
+      onSearch,
+      value: controlledValue,
+      defaultValue = "",
+      ...textInputProps
+    },
+    ref
+  ) => {
     const colorScheme = useColorScheme() ?? "light";
     const palette = Colors[colorScheme];
     const styles = useMemo(() => createStyles(palette), [palette]);
+
+    const [internalValue, setInternalValue] = useState(
+      controlledValue ?? defaultValue
+    );
+
+    const value = controlledValue ?? internalValue;
+
+    const handleSearch = () => {
+      onSearch?.(value.trim());
+    };
 
     return (
       <View style={[styles.container, containerStyle]}>
         <TextInput
           ref={ref}
-          style={[styles.input, style]}
+          value={value}
+          onChangeText={controlledValue ? undefined : setInternalValue}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
           placeholderTextColor={palette.primaryLighter}
+          style={[styles.input, style]}
           {...textInputProps}
         />
+
         <TouchableOpacity
-          style={{
-            backgroundColor: "#000000", // Default fallback
-            padding: 8,
-          }}
+          onPress={handleSearch}
+          style={styles.searchButton}
+          accessibilityRole="button"
         >
           <Ionicons
             name="search-outline"
@@ -58,7 +164,6 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       alignItems: "center",
       gap: 8,
       paddingHorizontal: 16,
-      paddingVertical: 2,
       backgroundColor: palette.accentWhite,
       shadowColor: "#000",
       shadowOpacity: 0.05,
@@ -70,6 +175,10 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       flex: 1,
       fontSize: 14,
       color: palette.textPrimary,
+    },
+    searchButton: {
+      padding: 8,
+      backgroundColor: palette.primary,
     },
   });
 

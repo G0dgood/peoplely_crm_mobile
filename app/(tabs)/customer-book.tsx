@@ -2,7 +2,10 @@ import AnimatedHeader from "@/components/AnimatedHeader";
 import PageTitle from "@/components/PageTitle";
 import SearchField from "@/components/SearchField";
 import { Colors } from "@/constants/theme";
+import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { usePrivilege } from "@/contexts/PrivilegeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGetSetupBookBySearchIdQuery } from "@/store/services/setupBookApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -25,72 +28,112 @@ type Customer = {
   phone: string;
 };
 
-const CUSTOMERS: Customer[] = [
-  {
-    id: "1",
-    firstName: "Jane",
-    lastName: "Doe",
-    email: "janedoe@example.com",
-    phone: "08023456789",
-  },
-  {
-    id: "2",
-    firstName: "John",
-    lastName: "Tom",
-    email: "janetom@example.com",
-    phone: "08023456789",
-  },
-  {
-    id: "3",
-    firstName: "Abiola",
-    lastName: "Adeyemi",
-    email: "abiola@example.com",
-    phone: "08051234567",
-  },
-  {
-    id: "4",
-    firstName: "Folake",
-    lastName: "Ogun",
-    email: "folake@example.com",
-    phone: "08081231231",
-  },
-  {
-    id: "5",
-    firstName: "Kunle",
-    lastName: "Adisa",
-    email: "kunlea@example.com",
-    phone: "08123459988",
-  },
-  {
-    id: "6",
-    firstName: "Ngozi",
-    lastName: "Okafor",
-    email: "ngozi@example.com",
-    phone: "08127654321",
-  },
-];
-
 export default function CustomerBookScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [query, setQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [numberOfItemsPerPageList] = useState([5, 10, 15, 40]);
   const [itemsPerPage, onItemsPerPageChange] = useState(
     numberOfItemsPerPageList[0]
   );
+  const { canAccess } = usePrivilege();
+  const canAccessModule = canAccess("customerBook");
+  const canView = canAccess("customerBook", "view");
+  const canCreate = canAccess("customerBook", "create");
+  const { lineOfBusinessData } = useLineOfBusiness();
+  const lobId =
+    lineOfBusinessData?.lineOfBusiness?._id ||
+    lineOfBusinessData?.lineOfBusiness?.id;
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
 
-  const filteredData = CUSTOMERS.filter((customer) => {
-    const lowered = query.toLowerCase();
-    return (
-      customer.firstName.toLowerCase().includes(lowered) ||
-      customer.lastName.toLowerCase().includes(lowered) ||
-      customer.email.toLowerCase().includes(lowered)
-    );
-  });
+  // Fetch customer by SearchId
+  const {
+    data: searchResult,
+    isLoading,
+    isError,
+    error,
+  } = useGetSetupBookBySearchIdQuery(
+    { lineOfBusinessId: lobId || "", searchId: searchQuery },
+    { skip: !searchQuery || !lobId }
+  );
+
+  console.log("searchResult", searchResult);
+
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [tableHeaders, setTableHeaders] = useState<string[]>([]);
+
+  // Update customers list when search result is found
+  React.useEffect(() => {
+    if (searchResult?.data) {
+      const data = searchResult.data as unknown[];
+      if (Array.isArray(data) && data.length > 0) {
+        // Dynamically extract headers from the first item, excluding internal fields like _id, id, __v
+        const firstItem = data[0] as Record<string, unknown>;
+        const headers = Object.keys(firstItem).filter(
+          (key) =>
+            !["_id", "id", "__v", "companyId", "lineOfBusinessId"].includes(
+              key
+            ) && key.toLowerCase() !== "searchid"
+        );
+        setTableHeaders(headers);
+
+        const mappedCustomers: Customer[] = data.map((item) => {
+          const record = item as Record<string, unknown>;
+          return {
+            id: (record.id as string) || (record._id as string),
+            firstName: (record.firstName as string) || "",
+            lastName: (record.lastName as string) || "",
+            email: (record.email as string) || "",
+            phone: (record.phone as string) || "",
+            // Optionally include any additional properties here if needed
+            ...Object.fromEntries(
+              Object.entries(record).filter(
+                ([key]) =>
+                  ![
+                    "id",
+                    "_id",
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "phone",
+                  ].includes(key)
+              )
+            ),
+          };
+        });
+        setCustomers(mappedCustomers);
+      } else {
+        setCustomers([]);
+      }
+    } else if (isError) {
+      setCustomers([]);
+      if (error && "data" in error) {
+        const errorData = (error as { data: { message?: string } }).data;
+        if (errorData?.message === "Record not found") {
+          console.error(errorData?.message);
+        }
+      }
+    }
+  }, [searchResult, isError, error]);
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+  };
+
+  const filteredCustomers = customers;
+
+  const handleViewCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+  };
+
+  const filteredData = customers;
 
   const from = page * itemsPerPage;
   const to = Math.min((page + 1) * itemsPerPage, filteredData.length);
@@ -99,7 +142,7 @@ export default function CustomerBookScreen() {
 
   useEffect(() => {
     setPage(0);
-  }, [query, itemsPerPage]);
+  }, [searchQuery]);
 
   return (
     <SafeAreaView
@@ -118,8 +161,9 @@ export default function CustomerBookScreen() {
         <View style={styles.headerRow}>
           <PageTitle title="Customer Book" />
           <SearchField
-            value={query}
-            onChangeText={setQuery}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            onSearch={() => handleSearch(searchTerm)}
             placeholder="Search"
             autoCorrect={false}
           />
@@ -138,6 +182,11 @@ export default function CustomerBookScreen() {
         {/* Sticky Column Layout */}
         <View style={{ flexDirection: "row" }}>
           {/* Sticky First Name Column */}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Searching customers...</Text>
+            </View>
+          )}
           <DataTable style={[styles.table, { width: 110 }]}>
             <DataTable.Header style={{ backgroundColor: palette.lightGray }}>
               <DataTable.Title textStyle={styles.columnLabel}>
@@ -362,5 +411,13 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       // borderRadius: 0,
       // borderWidth: 1,
       // borderColor: palette.mediumGray,
+    },
+    loadingContainer: {
+      paddingVertical: 20,
+      alignItems: "center",
+    },
+    loadingText: {
+      fontSize: 14,
+      color: palette.textSecondary,
     },
   });
