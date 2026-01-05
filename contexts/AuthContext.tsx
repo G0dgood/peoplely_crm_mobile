@@ -2,12 +2,15 @@ import {
   useLoginMutation,
   useLogoutMutation,
 } from "@/store/services/teamMembersApi";
+import { setCredentials } from "@/store/slices/authSlice";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 
 type User = {
   id: string;
   email: string;
   name?: string;
+  roleName?: string;
 };
 
 type AuthResult =
@@ -35,7 +38,7 @@ const defaultValue: AuthContextValue = {
   async signUp() {
     return { success: true };
   },
-  async signOut() {},
+  async signOut() { },
 };
 
 const AuthContext = createContext<AuthContextValue>(defaultValue);
@@ -52,6 +55,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authData, setAuthData] = useState<any | null>(null);
   const [login] = useLoginMutation();
   const [logoutApi] = useLogoutMutation();
+  const dispatch = useDispatch();
 
   // Check for existing session on mount
   useEffect(() => {
@@ -87,14 +91,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email;
       const resolvedName =
         response?.user?.name || response?.teamMember?.name || undefined;
+      const resolvedRoleName =
+        response?.teamMember?.role?.roleName ||
+        response?.user?.role ||
+        "agent";
 
       const nextUser: User = {
         id: String(resolvedId),
         email: String(resolvedEmail),
-        name: resolvedName,
+        name: resolvedName || "",
+        roleName: resolvedRoleName,
       };
 
       setUser(nextUser);
+      // Dispatch to Redux store
+      dispatch(
+        setCredentials({
+          user: {
+            id: nextUser.id,
+            email: nextUser.email,
+            name: nextUser.name || "",
+            role: nextUser.roleName || "",
+          },
+          token: response.accessToken,
+        })
+      );
+
       setIsLoading(false);
       return { success: true, user: nextUser };
     } catch (error) {
@@ -147,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (uid) {
         try {
           await logoutApi({ userId: String(uid) }).unwrap();
-        } catch (_e) {}
+        } catch (_e) { }
       }
       setUser(null);
       setAuthData(null);

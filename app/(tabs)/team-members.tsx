@@ -17,6 +17,8 @@ import AnimatedHeader from "@/components/AnimatedHeader";
 import PageTitle from "@/components/PageTitle";
 import SearchField from "@/components/SearchField";
 import { Colors } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 type TeamMember = {
@@ -27,7 +29,7 @@ type TeamMember = {
   role: string;
   supervisor: string;
   team: string;
-  status: "Logged In" | "Logged Out";
+  status: "Logged In" | "Logged Out" | "In Meeting" | string;
 };
 
 const TEAM_MEMBERS: TeamMember[] = [
@@ -130,7 +132,10 @@ export default function TeamMembersScreen() {
     () => createStyles(palette, colorScheme),
     [palette, colorScheme]
   );
+  const { user } = useAuth();
+  const { socket } = useSocket();
 
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(TEAM_MEMBERS);
   const [query, setQuery] = useState("");
   const [selectedSupervisor, setSelectedSupervisor] =
     useState("All Supervisors");
@@ -150,12 +155,12 @@ export default function TeamMembersScreen() {
   // Extract all unique supervisors from the data
   const allSupervisors = useMemo(() => {
     const supervisors = new Set(
-      TEAM_MEMBERS.map((member) => member.supervisor)
+      teamMembers.map((member) => member.supervisor)
     );
     return ["All Supervisors", ...Array.from(supervisors).sort()];
-  }, []);
+  }, [teamMembers]);
 
-  const filteredData = TEAM_MEMBERS.filter((member) => {
+  const filteredData = teamMembers.filter((member) => {
     const matchesQuery =
       member.id.toLowerCase().includes(query.toLowerCase()) ||
       member.fullName.toLowerCase().includes(query.toLowerCase());
@@ -175,6 +180,36 @@ export default function TeamMembersScreen() {
   useEffect(() => {
     setPage(0);
   }, [query, itemsPerPage, selectedSupervisor, selectedTeam]);
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    // Join room with Supervisor's TeamMember ID
+    // Assuming user.id corresponds to the TeamMember ID
+    socket.emit("join", user.id);
+
+    const handleStatusUpdate = (data: {
+      teamMemberId: string;
+      name: string;
+      status: string;
+      timestamp: string;
+    }) => {
+      console.log("Team Member Updated:", data);
+      setTeamMembers((prevMembers) =>
+        prevMembers.map((member) =>
+          member.id === data.teamMemberId
+            ? { ...member, status: data.status }
+            : member
+        )
+      );
+    };
+
+    socket.on("teamMemberStatusUpdate", handleStatusUpdate);
+
+    return () => {
+      socket.off("teamMemberStatusUpdate", handleStatusUpdate);
+    };
+  }, [socket, user]);
 
   return (
     <SafeAreaView
@@ -354,7 +389,9 @@ export default function TeamMembersScreen() {
                       styles.statusPill,
                       member.status === "Logged In"
                         ? styles.statusLoggedIn
-                        : styles.statusLoggedOut,
+                        : member.status === "In Meeting"
+                          ? styles.statusInMeeting
+                          : styles.statusLoggedOut,
                     ]}
                   >
                     <View>
@@ -363,7 +400,9 @@ export default function TeamMembersScreen() {
                           styles.statusPillText,
                           member.status === "Logged In"
                             ? styles.statusPillTextLoggedIn
-                            : styles.statusPillTextLoggedOut,
+                            : member.status === "In Meeting"
+                              ? styles.statusPillTextInMeeting
+                              : styles.statusPillTextLoggedOut,
                         ]}
                       >
                         {member.status}
@@ -648,6 +687,12 @@ const createStyles = (
           : "rgba(220, 53, 69, 0.1)",
       // borderColor: palette.statusError,
     },
+    statusInMeeting: {
+      backgroundColor:
+        colorScheme === "dark"
+          ? "rgba(253, 126, 20, 0.2)"
+          : "rgba(253, 126, 20, 0.1)",
+    },
     statusPillText: {
       fontSize: 12,
       fontWeight: "600",
@@ -657,6 +702,9 @@ const createStyles = (
     },
     statusPillTextLoggedOut: {
       color: palette.statusError,
+    },
+    statusPillTextInMeeting: {
+      color: palette.statusWarning,
     },
     modalOverlay: {
       flex: 1,

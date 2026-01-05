@@ -1,5 +1,7 @@
+import { useGetLineOfBusinessForTeamMemberQuery } from "@/store/services/teamMembersApi";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
+import { useSocket } from "./SocketContext";
 
 export type Role = "admin" | "supervisor" | "agent" | "qa" | "viewer";
 
@@ -122,9 +124,59 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
 	children,
 }) => {
 	const { user } = useAuth();
+	const { socket } = useSocket();
 	const [role, setRole] = useState<Role | null>(null);
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+
+	// Fetch Line of Business ID for the current user
+	const { data: lobData } = useGetLineOfBusinessForTeamMemberQuery(
+		user?.id || "",
+		{ skip: !user?.id }
+	);
+
+	// Listen for real-time role updates
+	useEffect(() => {
+		if (!socket || !user || !lobData?.lineOfBusiness?._id) return;
+
+		const lineOfBusinessId = lobData.lineOfBusiness._id;
+
+		// Join the Line of Business room
+		socket.emit("joinLineOfBusiness", lineOfBusinessId);
+
+		const handleRoleUpdated = (data: any) => {
+			console.log("Role updated:", data);
+
+			// Check if the update affects the CURRENT user
+			if (user?.roleId === data.role._id) {
+				console.log("Permissions updated for current user role");
+				// Reload privileges to ensure we have the latest state
+				// Ideally, we could directly update state from data.role.permissions
+				// but for now, we'll just reload the derived privileges
+				loadPrivileges();
+
+				// Optional: Show a toast or alert if needed
+				// Alert.alert("Permissions Updated", "Your role permissions have been updated.");
+			}
+		};
+
+		socket.on("roleUpdated", handleRoleUpdated);
+
+		const handleNotification = (notification: any) => {
+			// Basic alert for now, can be replaced with a proper toast library
+			if (notification?.message) {
+				console.log("Notification received:", notification);
+				// Alert.alert("Notification", notification.message);
+			}
+		};
+
+		socket.on("notification", handleNotification);
+
+		return () => {
+			socket.off("roleUpdated", handleRoleUpdated);
+			socket.off("notification", handleNotification);
+		};
+	}, [socket, user, lobData]);
 
 	// Load privileges when user changes
 	useEffect(() => {
@@ -141,18 +193,22 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
 	const loadPrivileges = async () => {
 		try {
 			setIsLoading(true);
-			// TODO: Fetch user role and permissions from API
-			// For now, use mock data based on user email or fetch from user object
 
-			// Mock: Assign role based on user (you can modify this logic)
-			const mockRole: Role = "agent"; // Default role
+			// Map roleName from user to Role type
+			// Default to 'agent' if no role found
+			let userRole: Role = "agent";
 
-			// In a real app, you would fetch this from your API:
-			// const userData = await fetchUserData(user.id);
-			// const userRole = userData.role;
+			if (user?.roleName) {
+				const roleLower = user.roleName.toLowerCase();
+				if (roleLower.includes("admin")) userRole = "admin";
+				else if (roleLower.includes("supervisor")) userRole = "supervisor";
+				else if (roleLower.includes("qa")) userRole = "qa";
+				else if (roleLower.includes("viewer")) userRole = "viewer";
+				else userRole = "agent";
+			}
 
-			setRole(mockRole);
-			setPermissions(rolePermissions[mockRole] || []);
+			setRole(userRole);
+			setPermissions(rolePermissions[userRole] || []);
 			setIsLoading(false);
 		} catch (error) {
 			console.error("Error loading privileges:", error);
