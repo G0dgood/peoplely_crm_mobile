@@ -3,6 +3,7 @@ import {
   useLogoutMutation,
 } from "@/store/services/teamMembersApi";
 import { setCredentials } from "@/store/slices/authSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   useCallback,
@@ -13,6 +14,7 @@ import React, {
 import { useDispatch } from "react-redux";
 
 type User = {
+  roleId?: any;
   id: string;
   email: string;
   name?: string;
@@ -41,6 +43,12 @@ type AuthContextValue = {
   signOut(): Promise<void>;
 
   updateUser: (updates: Partial<User>) => void;
+  getAccessToken: () => string | null;
+  getRefreshToken: () => string | null;
+  setTokens: (tokens: AuthTokens) => void;
+  clearTokens: () => void;
+  checkAuth: () => Promise<boolean>;
+  validateToken: () => boolean;
 };
 
 // Auth context type
@@ -69,14 +77,20 @@ const defaultValue: AuthContextValue = {
   isLoading: false,
   isAuthenticated: false,
   authData: null,
-  updateUser: () => {},
+  updateUser: () => { },
   async signIn() {
     return { success: true };
   },
   async signUp() {
     return { success: true };
   },
-  async signOut() {},
+  async signOut() { },
+  getAccessToken: () => null,
+  getRefreshToken: () => null,
+  setTokens: () => { },
+  clearTokens: () => { },
+  checkAuth: async () => false,
+  validateToken: () => false,
 };
 
 const AuthContext = createContext<AuthContextValue>(defaultValue);
@@ -100,21 +114,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const dispatch = useDispatch();
   const [tokens, setTokensState] = useState<AuthTokens | null>(null);
 
-  // Check for existing session on mount
   useEffect(() => {
-    checkAuthState();
-  }, []);
+    const loadAuthData = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("peoplely-user");
+        const storedToken = await AsyncStorage.getItem("token");
+        if (storedUser && storedToken) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setTokensState({ accessToken: storedToken });
+        } else {
+          const stored = await AsyncStorage.getItem(storageKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.user) {
+              setUser(parsed.user);
+            }
+            if (parsed.tokens) {
+              setTokensState(parsed.tokens);
+            }
+          }
+        }
+      } catch {
+        await AsyncStorage.removeItem(storageKey);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAuthData();
+  }, [storageKey]);
 
-  const checkAuthState = async () => {
-    try {
-      // TODO: Check for stored auth token/session
-      // For now, we'll just set loading to false
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error checking auth state:", error);
-      setIsLoading(false);
-    }
-  };
+  const getAccessToken = useCallback(() => {
+    return tokens?.accessToken || null;
+  }, [tokens]);
+
+  const getRefreshToken = useCallback(() => {
+    return tokens?.refreshToken || null;
+  }, [tokens]);
 
   const signIn = async (
     email: string,
@@ -142,9 +178,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         email: String(resolvedEmail),
         name: resolvedName || "",
         roleName: resolvedRoleName,
+        roleId: undefined
       };
 
       setUser(nextUser);
+      setTokensState({ accessToken: response.accessToken });
+      try {
+        await AsyncStorage.setItem("peoplely-user", JSON.stringify(nextUser));
+        await AsyncStorage.setItem("token", String(response.accessToken));
+        await AsyncStorage.setItem(
+          storageKey,
+          JSON.stringify({ user: nextUser, tokens: { accessToken: response.accessToken }, savedAt: Date.now() })
+        );
+      } catch { }
       // Dispatch to Redux store
       dispatch(
         setCredentials({
@@ -210,10 +256,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       if (uid) {
         try {
           await logoutApi({ userId: String(uid) }).unwrap();
-        } catch (_e) {}
+        } catch (_e) { }
       }
       setUser(null);
       setAuthData(null);
+      setTokensState(null);
+      await AsyncStorage.removeItem("peoplely-user");
+      await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem(storageKey);
       setIsLoading(false);
     } catch (error) {
       console.error("Error signing out:", error);
@@ -221,29 +271,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     }
   };
 
-  // Save auth data to localStorage
   const saveAuthData = useCallback(
     (userData: User | null, tokenData: AuthTokens | null) => {
-      if (typeof window === "undefined") return;
-
-      try {
-        if (userData && tokenData) {
-          localStorage.setItem(
-            storageKey,
-            JSON.stringify({
-              user: userData,
-              tokens: tokenData,
-            })
-          );
-        } else {
-          localStorage.removeItem(storageKey);
-        }
-      } catch (error) {
-        console.error("Error saving auth data to storage:", error);
+      if (userData && tokenData) {
+        AsyncStorage.setItem(
+          storageKey,
+          JSON.stringify({ user: userData, tokens: tokenData, savedAt: Date.now() })
+        ).catch(() => { });
+      } else {
+        AsyncStorage.removeItem(storageKey).catch(() => { });
       }
     },
     [storageKey]
   );
+
+  const clearAuthData = useCallback(async () => {
+    setUser(null);
+    setTokensState(null);
+    await AsyncStorage.removeItem(storageKey);
+  }, [storageKey]);
+
+  const setTokens = useCallback(
+    (tokenData: AuthTokens) => {
+      setTokensState(tokenData);
+      if (user) {
+        saveAuthData(user, tokenData);
+      }
+    },
+    [user, saveAuthData]
+  );
+
+  const clearTokens = useCallback(() => {
+    setTokensState(null);
+    if (user) {
+      saveAuthData(user, null);
+    }
+  }, [user, saveAuthData]);
+
+  const validateToken = useCallback(() => {
+    if (!tokens?.accessToken) return false;
+    return true;
+  }, [tokens]);
+
+  const checkAuth = useCallback(async () => {
+    if (!validateToken()) {
+      await clearAuthData();
+      return false;
+    }
+    const token = getAccessToken();
+    if (!token) {
+      await clearAuthData();
+      return false;
+    }
+    return true;
+  }, [validateToken, getAccessToken, clearAuthData]);
 
   // Update user
   const updateUser = useCallback(
@@ -262,12 +343,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const value: AuthContextValue = {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!tokens?.accessToken && validateToken(),
     authData,
     signIn,
     signUp,
     signOut,
     updateUser,
+    getAccessToken,
+    getRefreshToken,
+    setTokens,
+    clearTokens,
+    checkAuth,
+    validateToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

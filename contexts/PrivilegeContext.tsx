@@ -1,317 +1,258 @@
-// import { useGetLineOfBusinessForTeamMemberQuery } from "@/store/services/teamMembersApi";
-// import React, { createContext, useContext, useEffect, useState } from "react";
-// import { useAuth } from "./AuthContext";
-// import { useSocket } from "./SocketContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { useSocket } from "@/contexts/SocketContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-// export type Role = "admin" | "supervisor" | "agent" | "qa" | "viewer";
+export type ModuleId =
+  | "dashboard"
+  | "customerBook"
+  | "userManagement"
+  | "setupBook"
+  | "customerSMS"
+  | "report"
+  | "systemSetting"
+  | "auditLog"
+  | "teamMembers";
 
-// export type Permission =
-//   | "view_dashboard"
-//   | "view_customers"
-//   | "create_customer"
-//   | "edit_customer"
-//   | "delete_customer"
-//   | "view_team_members"
-//   | "manage_team_members"
-//   | "view_reports"
-//   | "export_reports"
-//   | "view_disposition"
-//   | "create_disposition"
-//   | "edit_disposition"
-//   | "send_sms"
-//   | "manage_settings"
-//   | "view_all_data"
-//   | "manage_users";
+export type PermissionAction = "view" | "create" | "edit" | "delete";
 
-// type RolePermissions = {
-//   [key in Role]: Permission[];
-// };
+export interface RoleModulePermission {
+  id: string;
+  moduleName: string;
+  access: boolean;
+  permissions: {
+    view: boolean;
+    edit: boolean;
+    delete: boolean;
+    create: boolean;
+  };
+}
 
-// type PermissionAction = "view" | "create" | "edit" | "delete";
+export interface UserRole {
+  roleName: string;
+  permissions: RoleModulePermission[];
+  id?: string;
+  description?: string;
+}
 
-// // Define permissions for each role
-// const rolePermissions: RolePermissions = {
-//   admin: [
-//     "view_dashboard",
-//     "view_customers",
-//     "create_customer",
-//     "edit_customer",
-//     "delete_customer",
-//     "view_team_members",
-//     "manage_team_members",
-//     "view_reports",
-//     "export_reports",
-//     "view_disposition",
-//     "create_disposition",
-//     "edit_disposition",
-//     "send_sms",
-//     "manage_settings",
-//     "view_all_data",
-//     "manage_users",
-//   ],
-//   supervisor: [
-//     "view_dashboard",
-//     "view_customers",
-//     "create_customer",
-//     "edit_customer",
-//     "view_team_members",
-//     "view_reports",
-//     "export_reports",
-//     "view_disposition",
-//     "create_disposition",
-//     "edit_disposition",
-//     "send_sms",
-//     "view_all_data",
-//   ],
-//   agent: [
-//     "view_dashboard",
-//     "view_customers",
-//     "create_customer",
-//     "view_reports",
-//     "view_disposition",
-//     "create_disposition",
-//     "send_sms",
-//   ],
-//   qa: [
-//     "view_dashboard",
-//     "view_customers",
-//     "view_team_members",
-//     "view_reports",
-//     "view_disposition",
-//     "edit_disposition",
-//   ],
-//   viewer: [
-//     "view_dashboard",
-//     "view_customers",
-//     "view_reports",
-//     "view_disposition",
-//   ],
-// };
+export interface UserPrivileges {
+  userId: string;
+  roleId: string;
+  role: UserRole | null;
+}
 
-// type PrivilegeContextValue = {
-//   role: Role | null;
-//   permissions: Permission[];
-//   isLoading: boolean;
-//   hasPermission(permission: Permission): boolean;
-//   hasAnyPermission(permissions: Permission[]): boolean;
-//   hasAllPermissions(permissions: Permission[]): boolean;
-//   isRole(role: Role): boolean;
-//   isAnyRole(roles: Role[]): boolean;
-//   updateRole(role: Role): void;
-//   updatePermissions(permissions: Permission[]): void;
-//   canAccess: (permission: Permission, action?: PermissionAction) => boolean;
-// };
+interface PrivilegeContextType {
+  userPrivileges: UserPrivileges | null;
+  isLoading: boolean;
+  hasPermission: (moduleId: ModuleId) => boolean;
+  hasAnyPermission: (moduleIds: ModuleId[]) => boolean;
+  hasAllPermissions: (moduleIds: ModuleId[]) => boolean;
+  canAccess: (moduleId: ModuleId, action?: PermissionAction) => boolean;
+  setUserPrivileges: (privileges: UserPrivileges) => void;
+  clearPrivileges: () => void;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+}
 
-// const defaultValue: PrivilegeContextValue = {
-//   role: null,
-//   permissions: [],
-//   isLoading: false,
-//   hasPermission: () => false,
-//   hasAnyPermission: () => false,
-//   hasAllPermissions: () => false,
-//   isRole: () => false,
-//   isAnyRole: () => false,
-//   updateRole: () => {},
-//   updatePermissions: () => {},
-//   canAccess: () => false,
-// };
+const PrivilegeContext = createContext<PrivilegeContextType | undefined>(undefined);
 
-// const PrivilegeContext = createContext<PrivilegeContextValue>(defaultValue);
+interface PrivilegeProviderProps {
+  children: React.ReactNode;
+  initialPrivileges?: UserPrivileges;
+}
 
-// export const usePrivilege = () => useContext(PrivilegeContext);
+export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
+  children,
+  initialPrivileges,
+}) => {
+  const [userPrivileges, setUserPrivilegesState] = useState<UserPrivileges | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { socket } = useSocket();
+  const { selectedLineOfBusinessId } = useLineOfBusiness();
+  const { user, updateUser } = useAuth();
 
-// type PrivilegeProviderProps = {
-//   children: React.ReactNode;
-// };
+  useEffect(() => {
+    setIsLoading(true);
+    const load = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("userPrivileges");
+        if (stored) {
+          setUserPrivilegesState(JSON.parse(stored));
+        } else if (initialPrivileges) {
+          setUserPrivilegesState(initialPrivileges);
+        }
+      } catch {
+        if (initialPrivileges) {
+          setUserPrivilegesState(initialPrivileges);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, [initialPrivileges]);
 
-// export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
-//   children,
-// }) => {
-//   const { user } = useAuth();
-//   const { socket } = useSocket();
-//   const [role, setRole] = useState<Role | null>(null);
-//   const [permissions, setPermissions] = useState<Permission[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const save = async () => {
+      if (userPrivileges) {
+        try {
+          await AsyncStorage.setItem("userPrivileges", JSON.stringify(userPrivileges));
+        } catch { }
+      }
+    };
+    save();
+  }, [userPrivileges]);
 
-//   // Fetch Line of Business ID for the current user
-//   const { data: lobData } = useGetLineOfBusinessForTeamMemberQuery(
-//     user?.id || "",
-//     { skip: !user?.id }
-//   );
+  useEffect(() => {
+    if (!socket || !selectedLineOfBusinessId) return;
+    socket.emit("joinLineOfBusiness", selectedLineOfBusinessId);
+    const handleUpdateRole = (data: any) => {
+      if (!userPrivileges || !userPrivileges.role) return;
+      const currentRoleId =
+        userPrivileges.roleId ||
+        (userPrivileges.role as any).id ||
+        (userPrivileges.role as any)._id;
+      const updatedRoleId = data.role._id || data.role.id;
+      if (
+        userPrivileges.role.roleName === data.role.roleName ||
+        (currentRoleId && updatedRoleId && currentRoleId === updatedRoleId)
+      ) {
+        const updatedUserPrivileges: UserPrivileges = {
+          ...userPrivileges,
+          role: {
+            ...(userPrivileges.role as UserRole),
+            permissions: data.role.permissions,
+          },
+        };
+        setUserPrivilegesState(updatedUserPrivileges);
 
-//   // Listen for real-time role updates
-//   useEffect(() => {
-//     if (!socket || !user || !lobData?.lineOfBusiness?._id) return;
+        AsyncStorage.setItem(
+          "userPrivileges",
+          JSON.stringify(updatedUserPrivileges)
+        ).catch(() => { });
+        AsyncStorage.getItem("peoplely-user")
+          .then((storedUser) => {
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              if (parsedUser.role && typeof parsedUser.role === "object") {
+                parsedUser.role.permissions = data.role.permissions;
+                AsyncStorage.setItem(
+                  "peoplely-user",
+                  JSON.stringify(parsedUser)
+                ).catch(() => { });
+              }
+            }
+          })
+          .catch(() => { });
+      }
+    };
+    socket.on("updateRole", handleUpdateRole);
+    return () => {
+      socket.off("updateRole", handleUpdateRole);
+    };
+  }, [socket, selectedLineOfBusinessId, userPrivileges, user, updateUser]);
 
-//     const lineOfBusinessId = lobData.lineOfBusiness._id;
+  const findModulePermission = (moduleId: string): RoleModulePermission | undefined => {
+    if (!userPrivileges?.role?.permissions) return undefined;
+    const normalize = (str?: string) => (str ?? "").replace(/\s+/g, "").toLowerCase();
+    const target = normalize(moduleId);
+    return userPrivileges.role.permissions.find(
+      (p) => normalize(p.moduleName) === target
+    );
+  };
 
-//     // Join the Line of Business room
-//     socket.emit("joinLineOfBusiness", lineOfBusinessId);
+  const hasPermission = (moduleId: ModuleId): boolean => {
+    if (!userPrivileges) return false;
+    if (
+      userPrivileges.role?.roleName === "Administrator" ||
+      userPrivileges.role?.roleName === "admin" ||
+      userPrivileges.roleId === "administrator"
+    ) {
+      return true;
+    }
+    const modulePermission = findModulePermission(moduleId);
+    if (modulePermission) {
+      return modulePermission.access;
+    }
+    return false;
+  };
 
-//     const handleRoleUpdated = (data: any) => {
-//       console.log("Role updated:", data);
+  const hasAnyPermission = (moduleIds: ModuleId[]): boolean => {
+    return moduleIds.some((moduleId) => hasPermission(moduleId));
+  };
 
-//       // Check if the update affects the CURRENT user
-//       if (user?.roleId === data.role._id) {
-//         console.log("Permissions updated for current user role");
-//         // Reload privileges to ensure we have the latest state
-//         // Ideally, we could directly update state from data.role.permissions
-//         // but for now, we'll just reload the derived privileges
-//         loadPrivileges();
+  const hasAllPermissions = (moduleIds: ModuleId[]): boolean => {
+    return moduleIds.every((moduleId) => hasPermission(moduleId));
+  };
 
-//         // Optional: Show a toast or alert if needed
-//         // Alert.alert("Permissions Updated", "Your role permissions have been updated.");
-//       }
-//     };
+  const canAccess = (moduleId: ModuleId, action?: PermissionAction): boolean => {
+    if (!userPrivileges) return false;
+    if (
+      userPrivileges.role?.roleName === "Administrator" ||
+      userPrivileges.role?.roleName === "admin" ||
+      userPrivileges.roleId === "administrator"
+    ) {
+      return true;
+    }
+    const modulePermission = findModulePermission(moduleId);
+    if (modulePermission) {
+      if (!modulePermission.access) return false;
+      if (!action) return true;
+      if (action === "view" || action === "create" || action === "edit" || action === "delete") {
+        return modulePermission.permissions[action];
+      }
+      return false;
+    }
+    return false;
+  };
 
-//     socket.on("roleUpdated", handleRoleUpdated);
+  const setUserPrivileges = (privileges: UserPrivileges) => {
+    setUserPrivilegesState(privileges);
+  };
 
-//     const handleNotification = (notification: any) => {
-//       // Basic alert for now, can be replaced with a proper toast library
-//       if (notification?.message) {
-//         console.log("Notification received:", notification);
-//         // Alert.alert("Notification", notification.message);
-//       }
-//     };
+  const clearPrivileges = () => {
+    setUserPrivilegesState(null);
+    AsyncStorage.removeItem("userPrivileges").catch(() => { });
+  };
 
-//     socket.on("notification", handleNotification);
+  const isAdmin = useMemo(() => {
+    if (!userPrivileges) return false;
+    return (
+      userPrivileges.role?.roleName === "Administrator" ||
+      userPrivileges.role?.roleName === "admin" ||
+      userPrivileges.roleId === "administrator"
+    );
+  }, [userPrivileges]);
 
-//     return () => {
-//       socket.off("roleUpdated", handleRoleUpdated);
-//       socket.off("notification", handleNotification);
-//     };
-//   }, [socket, user, lobData]);
+  const isSuperAdmin = useMemo(() => {
+    if (!userPrivileges) return false;
+    const roleName = userPrivileges.role?.roleName || "";
+    return roleName.toLowerCase() === "super admin";
+  }, [userPrivileges]);
 
-//   // Load privileges when user changes
-//   useEffect(() => {
-//     if (user) {
-//       loadPrivileges();
-//     } else {
-//       // Clear privileges when user logs out
-//       setRole(null);
-//       setPermissions([]);
-//       setIsLoading(false);
-//     }
-//   }, [user]);
+  const contextValue: PrivilegeContextType = {
+    userPrivileges,
+    isLoading,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    canAccess,
+    setUserPrivileges,
+    clearPrivileges,
+    isAdmin,
+    isSuperAdmin,
+  };
 
-//   // Check if user can perform a specific action on a module
-//   const canAccess = (
-//     permission: Permission,
-//     action?: PermissionAction
-//   ): boolean => {
-//     if (!userPrivileges) return false;
+  return <PrivilegeContext.Provider value={contextValue}>{children}</PrivilegeContext.Provider>;
+};
 
-//     // Administrator can do everything
-//     if (
-//       userPrivileges.role?.roleName === "Administrator" ||
-//       userPrivileges.role?.roleName === "admin" ||
-//       userPrivileges.roleId === "administrator"
-//     ) {
-//       return true;
-//     }
+export const usePrivilege = () => {
+  const context = useContext(PrivilegeContext);
+  if (context === undefined) {
+    throw new Error("usePrivilege must be used within a PrivilegeProvider");
+  }
+  return context;
+};
 
-//     const modulePermission = findModulePermission(moduleId);
-
-//     // If we have granular permissions, use them
-//     if (modulePermission) {
-//       if (!modulePermission.access) return false;
-
-//       if (!action) return true;
-
-//       if (
-//         action === "view" ||
-//         action === "create" ||
-//         action === "edit" ||
-//         action === "delete"
-//       ) {
-//         return modulePermission.permissions[action];
-//       }
-
-//       return false;
-//     }
-
-//     return false;
-//   };
-
-//   const loadPrivileges = async () => {
-//     try {
-//       setIsLoading(true);
-
-//       // Map roleName from user to Role type
-//       // Default to 'agent' if no role found
-//       let userRole: Role = "agent";
-
-//       if (user?.roleName) {
-//         const roleLower = user.roleName.toLowerCase();
-//         if (roleLower.includes("admin")) userRole = "admin";
-//         else if (roleLower.includes("supervisor")) userRole = "supervisor";
-//         else if (roleLower.includes("qa")) userRole = "qa";
-//         else if (roleLower.includes("viewer")) userRole = "viewer";
-//         else userRole = "agent";
-//       }
-
-//       setRole(userRole);
-//       setPermissions(rolePermissions[userRole] || []);
-//       setIsLoading(false);
-//     } catch (error) {
-//       console.error("Error loading privileges:", error);
-//       setRole(null);
-//       setPermissions([]);
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const hasPermission = (permission: Permission): boolean => {
-//     return permissions.includes(permission);
-//   };
-
-//   const hasAnyPermission = (requiredPermissions: Permission[]): boolean => {
-//     return requiredPermissions.some((permission) =>
-//       permissions.includes(permission)
-//     );
-//   };
-
-//   const hasAllPermissions = (requiredPermissions: Permission[]): boolean => {
-//     return requiredPermissions.every((permission) =>
-//       permissions.includes(permission)
-//     );
-//   };
-
-//   const isRole = (checkRole: Role): boolean => {
-//     return role === checkRole;
-//   };
-
-//   const isAnyRole = (checkRoles: Role[]): boolean => {
-//     return role !== null && checkRoles.includes(role);
-//   };
-
-//   const updateRole = (newRole: Role) => {
-//     setRole(newRole);
-//     setPermissions(rolePermissions[newRole] || []);
-//   };
-
-//   const updatePermissions = (newPermissions: Permission[]) => {
-//     setPermissions(newPermissions);
-//   };
-
-//   const value: PrivilegeContextValue = {
-//     role,
-//     permissions,
-//     isLoading,
-//     hasPermission,
-//     hasAnyPermission,
-//     hasAllPermissions,
-//     isRole,
-//     isAnyRole,
-//     updateRole,
-//     updatePermissions,
-//   };
-
-//   return (
-//     <PrivilegeContext.Provider value={value}>
-//       {children}
-//     </PrivilegeContext.Provider>
-//   );
-// };
-
-// export default PrivilegeContext;
+export default PrivilegeContext;

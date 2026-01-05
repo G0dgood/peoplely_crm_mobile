@@ -25,6 +25,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PrivilegeProvider } from "@/contexts/PrivilegeContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { LineOfBusinessProvider } from "@/contexts/LineOfBusinessContext";
 import { useNetworkMonitor } from "@/hooks/useNetworkMonitor";
 import { store } from "@/store";
 import { syncPendingDispositions } from "@/utils/dispositionStorage";
@@ -157,13 +158,15 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <AuthProvider>
-        <PrivilegeProvider>
-          <ThemeProvider>
-            <SocketProvider>
-              <AppContent />
-            </SocketProvider>
-          </ThemeProvider>
-        </PrivilegeProvider>
+        <LineOfBusinessProvider>
+          <PrivilegeProvider>
+            <ThemeProvider>
+              <SocketProvider>
+                <AppContent />
+              </SocketProvider>
+            </ThemeProvider>
+          </PrivilegeProvider>
+        </LineOfBusinessProvider>
       </AuthProvider>
     </Provider>
   );

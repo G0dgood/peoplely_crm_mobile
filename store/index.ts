@@ -3,6 +3,8 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 // Import slices
 import { teamMembersApi } from "./services/teamMembersApi";
+import { lineOfBusinessApi } from "./services/lineOfBusinessApi";
+import { setupBookApi } from "./services/setupBookApi";
 import authReducer from "./slices/authSlice";
 import dispositionReducer from "./slices/dispositionSlice";
 import networkReducer from "./slices/networkSlice";
@@ -17,6 +19,8 @@ export const store = configureStore({
     notification: notificationReducer,
     user: userReducer,
     [teamMembersApi.reducerPath]: teamMembersApi.reducer,
+    [lineOfBusinessApi.reducerPath]: lineOfBusinessApi.reducer,
+    [setupBookApi.reducerPath]: setupBookApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -24,7 +28,10 @@ export const store = configureStore({
         // Ignore these action types
         ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
-    }).concat(teamMembersApi.middleware),
+    })
+      .concat(teamMembersApi.middleware)
+      .concat(lineOfBusinessApi.middleware)
+      .concat(setupBookApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,6 +1,6 @@
-"use client";
 
 import { useGetLineOfBusinessQuery } from "@/store/services/lineOfBusinessApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   ReactNode,
@@ -34,20 +34,21 @@ export const LineOfBusinessProvider: React.FC<LineOfBusinessProviderProps> = ({
   >(initialLineOfBusinessId || null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("selectedLineOfBusinessId");
-    if (saved) {
-      setSelectedLineOfBusinessIdState(saved);
-    }
+    const load = async () => {
+      const saved = await AsyncStorage.getItem("selectedLineOfBusinessId");
+      if (saved) {
+        setSelectedLineOfBusinessIdState(saved);
+      }
+    };
+    load();
   }, []);
 
   const setSelectedLineOfBusinessId = (id: string | null) => {
     setSelectedLineOfBusinessIdState(id);
-    if (typeof window !== "undefined") {
-      if (id) {
-        localStorage.setItem("selectedLineOfBusinessId", id);
-      } else {
-        localStorage.removeItem("selectedLineOfBusinessId");
-      }
+    if (id) {
+      AsyncStorage.setItem("selectedLineOfBusinessId", id).catch(() => { });
+    } else {
+      AsyncStorage.removeItem("selectedLineOfBusinessId").catch(() => { });
     }
   };
 

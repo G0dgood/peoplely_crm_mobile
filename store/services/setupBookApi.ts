@@ -50,9 +50,7 @@ export const setupBookApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.base_url,
     prepareHeaders: (headers, { getState }) => {
-      const token =
-        (getState() as any).auth?.tokens?.accessToken ||
-        localStorage.getItem("token");
+      const token = (getState() as any).auth?.token;
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
