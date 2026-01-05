@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Animated, View } from "react-native";
 
-function AnimatedTabIcon({ name, color, focused }) {
+function AnimatedTabIcon({ name, color, focused = false }) {
   const barAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
