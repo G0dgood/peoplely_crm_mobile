@@ -194,7 +194,6 @@ export default function TeamMembersScreen() {
       status: string;
       timestamp: string;
     }) => {
-      console.log("Team Member Updated:", data);
       setTeamMembers((prevMembers) =>
         prevMembers.map((member) =>
           member.id === data.teamMemberId

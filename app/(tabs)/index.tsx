@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  RefreshControl,
   StatusBar,
   StyleSheet,
   Text,
@@ -20,8 +21,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import AnimatedHeader from "@/components/AnimatedHeader";
 import DashboardHeader from "@/components/DashboardHeader";
+import AddWidgetModal from "@/components/modals/AddWidgetModal";
 import NoteCard from "@/components/NoteCard";
 import PageTitle from "@/components/PageTitle";
+import Skeleton from "@/components/Skeleton";
 import StatusBanner from "@/components/StatusBanner";
 import SwipeableCard from "@/components/SwipeableCard";
 import { Colors } from "@/constants/theme";
@@ -29,84 +32,269 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
 import { useAppSelector } from "@/store/hooks";
+import { useGetNotificationsByLineOfBusinessIdQuery } from "@/store/services/notificationApi";
 import {
   useGetLineOfBusinessForTeamMemberQuery,
   useGetStatusesByLineOfBusinessQuery,
 } from "@/store/services/teamMembersApi";
 // @ts-ignore
-import { AVAILABLE_WIDGETS } from "@/app/modal/add-widget";
-// @ts-ignore
 import { BarChart, LineChart } from "expo-charts";
 // @ts-ignore
+import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import {
+  generateChartData,
+} from "@/utils/chartDataGenerator";
+import {
+  getOfflineDispositions,
+  getSyncedDispositions,
+} from "@/utils/dispositionStorage";
+import { ChartDataItem } from "@/utils/types";
 import PieChart from "expo-charts/dist/PieChart";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
+import { filterDispositionsByTimeRange } from "../../utils/filterUtils";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const WIDGET_STORAGE_KEY = "@dashboard_selected_widgets";
 const STATUS_STORAGE_KEY = "@user_status";
 
 // Status options are fetched live from API; no local defaults
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = React.useMemo(() => createStyles(palette), [palette]);
   const { user } = useAuth();
+  const { selectedLineOfBusinessId } = useLineOfBusiness();
+
+
+
   const {
     data: lobData,
     isLoading: lobLoading,
     error: lobError,
-  } = useGetLineOfBusinessForTeamMemberQuery("693806b15eb41d3dbd71d442");
+    refetch: refetchLob,
+  } = useGetLineOfBusinessForTeamMemberQuery(selectedLineOfBusinessId || "", {
+    skip: !selectedLineOfBusinessId,
+  });
   const {
     data: statusesData,
-    isLoading: statusesLoading,
-    error: statusesError,
-  } = useGetStatusesByLineOfBusinessQuery("693806b15eb41d3dbd71d442");
+    refetch: refetchStatuses,
+  } = useGetStatusesByLineOfBusinessQuery(selectedLineOfBusinessId || "", {
+    skip: !selectedLineOfBusinessId,
+  });
+
+  const { refetch: refetchNotifications } =
+    useGetNotificationsByLineOfBusinessIdQuery(selectedLineOfBusinessId || "", {
+      skip: !selectedLineOfBusinessId,
+    });
+
 
   //  Animated scroll tracking
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Widget management
-  const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
-
   // Status management
   const [currentStatus, setCurrentStatus] = useState<string>("available");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showAddWidgetModal, setShowAddWidgetModal] = useState(false);
 
-  // Notification count
-  const [notificationCount, setNotificationCount] = useState<number>(5);
+  // Notification count from slice
+  const notificationCount = useAppSelector(
+    (state) => state.notification.unreadCount
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
   // Sync dispositions from AsyncStorage to Redux
   const { loadDispositionsIntoRedux } = useDispositionSync();
+
+  const loadStatus = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(STATUS_STORAGE_KEY);
+      if (saved) {
+        setCurrentStatus(saved);
+      } else {
+        setCurrentStatus("available");
+      }
+    } catch (error) {
+      console.error("Error loading status:", error);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await Promise.all([
+        refetchLob(),
+        refetchStatuses(),
+        refetchNotifications(),
+        loadStatus(),
+        loadDispositionsIntoRedux(),
+      ]);
+    } catch (error) {
+      console.error("Error refreshing dashboard:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [
+    refetchLob,
+    refetchStatuses,
+    refetchNotifications,
+    loadDispositionsIntoRedux,
+  ]);
 
   // Get pending dispositions from Redux store
   const pendingDispositions = useAppSelector(
     (state) => state.disposition.pendingDispositions
   );
   const pendingCount = pendingDispositions.length;
+  // @ts-ignore
+  const apiDispositions = lobData?.lineOfBusiness?.dispositions || [];
+  // @ts-ignore
+  const dashboardSettings = useMemo(() => lobData?.lineOfBusiness?.dashboardSettings || {}, [lobData]);
 
-  // Reload dispositions when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadDispositionsIntoRedux();
-    }, [loadDispositionsIntoRedux])
-  );
+  // Use state to hold the resolved dispositions
+  const [resolvedCombinedDispositions, setResolvedCombinedDispositions] = useState<any[]>([]);
+
+  // Effect to load and combine dispositions
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        const offline = await getOfflineDispositions();
+
+        // If we have API data, use it as the source of "synced" data
+        // Otherwise fallback to local synced data
+        const synced = Array.isArray(apiDispositions) && apiDispositions.length > 0
+          ? apiDispositions
+          : await getSyncedDispositions();
+
+        if (isMounted) {
+          // @ts-ignore
+          setResolvedCombinedDispositions([...offline, ...synced]);
+        }
+      } catch (error) {
+        console.error("Error loading dispositions:", error);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+    // Depend on apiDispositions length to avoid loop if array reference changes but content doesn't
+    // Also depend on pendingCount to refresh when pending items change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiDispositions?.length, pendingCount]);
+
+  // Get widgets from context and update values dynamically based on disposition data
+  const widgets = useMemo(() => {
+    // Filter dispositions based on time range
+    const timeRange =
+      dashboardSettings.dispositionSettings?.timeRangeView || "daily";
+    const filteredDispositions = filterDispositionsByTimeRange(
+      resolvedCombinedDispositions,
+      timeRange
+    );
+
+    // Calculate disposition field counts
+    const calculateDispositionFieldCount = (fieldName: string): number => {
+      return filteredDispositions.filter((disp) => {
+        // Check dispositionData array
+        // @ts-ignore
+        if (disp.dispositionData && Array.isArray(disp.dispositionData)) {
+          // @ts-ignore
+          const field = disp.dispositionData.find(
+            (f: any) => f.fieldName === fieldName
+          );
+          if (field) {
+            const value = field.fieldValue;
+            return value && value.toString().trim() !== "" && value !== "-";
+          }
+        }
+
+        // Fallback for direct property access (legacy support)
+        // @ts-ignore
+        const fieldValue = disp[fieldName];
+        return (
+          fieldValue && String(fieldValue).trim() !== "" && fieldValue !== "-"
+        );
+      }).length;
+    };
+
+    return dashboardSettings?.widgets?.map((widget: any) => {
+      // Update pending dispositions widget value
+      if (widget.title === "Pending Dispositions") {
+        return { ...widget, value: pendingCount };
+      }
+
+      // Update total dispositions widget value
+      if (
+        widget.title === "Total Dispositions" ||
+        widget.title === "Total Calls"
+      ) {
+        return { ...widget, value: filteredDispositions.length };
+      }
+
+      // Check if widget title corresponds to a disposition field
+      // We check if the widget title matches any disposition name in the settings
+      const isDispositionField = dashboardSettings.dispositions?.some(
+        (d: any) => d.name === widget.title
+      );
+
+      if (isDispositionField) {
+        return {
+          ...widget,
+          value: calculateDispositionFieldCount(widget.title),
+        };
+      }
+
+      // Check if widget title corresponds to a call outcome
+      const isCallOutcome = dashboardSettings.callOutcomes?.some(
+        (o: any) => o.name.toLowerCase() === widget.title.toLowerCase()
+      );
+
+      if (isCallOutcome) {
+        const count = filteredDispositions.filter((disp) => {
+          // @ts-ignore
+          if (disp.dispositionData && Array.isArray(disp.dispositionData)) {
+            // @ts-ignore
+            return disp.dispositionData.some(
+              (f: any) =>
+                f.fieldValue &&
+                f.fieldValue.toString().toLowerCase() ===
+                widget.title.toLowerCase()
+            );
+          }
+          return false;
+        }).length;
+        return { ...widget, value: count };
+      }
+
+      return widget;
+    });
+  }, [dashboardSettings, resolvedCombinedDispositions, pendingCount]);
+
+  // Wrapper function to generate chart data using the utility function
+  const generateChartDataWrapper = (
+    dataSource: string | string[],
+    chartColor?: string,
+    colors?: Record<string, string>
+  ): ChartDataItem[] => {
+    return generateChartData(
+      dataSource,
+      chartColor,
+      { dashboardSettings },
+      pendingCount,
+      colors,
+      resolvedCombinedDispositions
+    );
+  };
 
   // Load saved status on mount
   useEffect(() => {
-    const loadStatus = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STATUS_STORAGE_KEY);
-        if (saved) {
-          setCurrentStatus(saved);
-        } else {
-          setCurrentStatus("available");
-        }
-      } catch (error) {
-        console.error("Error loading status:", error);
-      }
-    };
     loadStatus();
   }, []);
 
@@ -120,102 +308,48 @@ export default function DashboardScreen() {
     }
   };
 
-  // Load saved widgets on mount
-  useEffect(() => {
-    const loadWidgets = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(WIDGET_STORAGE_KEY);
-        if (saved) {
-          setSelectedWidgetIds(JSON.parse(saved));
-        } else {
-          // Default to showing the first bar chart
-          setSelectedWidgetIds(["bar-chart"]);
-        }
-      } catch (error) {
-        console.error("Error loading widgets:", error);
-      }
-    };
-    loadWidgets();
-  }, []);
-
   // Reload widgets when screen comes into focus (returning from modal)
   useFocusEffect(
     useCallback(() => {
-      const reloadWidgets = async () => {
-        try {
-          const saved = await AsyncStorage.getItem(WIDGET_STORAGE_KEY);
-          if (saved) {
-            setSelectedWidgetIds(JSON.parse(saved));
-          }
-        } catch (error) {
-          console.error("Error reloading widgets:", error);
-        }
-      };
-      reloadWidgets();
-    }, [])
-  );
-
-  const selectedWidgets = AVAILABLE_WIDGETS.filter((widget) =>
-    selectedWidgetIds.includes(widget.id)
+      loadDispositionsIntoRedux();
+    }, [loadDispositionsIntoRedux])
   );
 
   // Build cards array - conditionally include "Pending Sync" only when there are pending items
-  const apiWidgets = lobData?.lineOfBusiness?.dashboardSettings?.widgets || [];
   const baseCards =
-    apiWidgets.length > 0
-      ? apiWidgets.map((w: any) => {
-          const title = String(w?.title || "").toLowerCase();
-          const icon = title.includes("total")
-            ? "call-outline"
-            : title.includes("fail")
+    widgets && widgets.length > 0
+      ? widgets.map((w: any) => {
+        const title = String(w?.title || "").toLowerCase();
+        const icon = title.includes("total")
+          ? "call-outline"
+          : title.includes("fail")
             ? "close-circle"
             : title.includes("success")
-            ? "checkmark-circle"
-            : "bar-chart-outline";
-          return {
-            type: w?.id || title || "widget",
-            label: w?.title || "Widget",
-            value: String(w?.value ?? "0"),
-            icon,
-            color: w?.color || palette.interactivePrimary,
-          };
-        })
+              ? "checkmark-circle"
+              : "bar-chart-outline";
+        return {
+          type: w?.id || title || "widget",
+          label: w?.title || "Widget",
+          value: String(w?.value ?? "0"),
+          icon,
+          color: w?.color || palette.interactivePrimary,
+        };
+      })
       : [
-          {
-            type: "total",
-            label: "Total Calls",
-            value: "28",
-            icon: "call-outline",
-            color: palette.interactivePrimary,
-          },
-          {
-            type: "failed",
-            label: "Failed Call",
-            value: "12",
-            icon: "close-circle",
-            color: palette.statusError,
-          },
-          {
-            type: "successful",
-            label: "Successful",
-            value: "45",
-            icon: "checkmark-circle",
-            color: palette.statusSuccess,
-          },
-        ];
+      ];
 
   // Only add "Pending Sync" card if there are pending dispositions
   const pendingCard =
     pendingCount > 0
       ? [
-          {
-            type: "pending",
-            label: "Pending Sync",
-            value: pendingCount.toString(),
-            icon: "time-outline",
-            color: palette.statusWarning,
-          },
-        ]
+        {
+          type: "pending",
+          label: "Pending Sync",
+          value: pendingCount.toString(),
+          icon: "time-outline",
+          color: palette.statusWarning,
+        },
+      ]
       : [];
 
   const cards = [...baseCards, ...pendingCard];
@@ -273,6 +407,9 @@ export default function DashboardScreen() {
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true }
           )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <View style={styles.headerRow}>
             <PageTitle
@@ -312,22 +449,54 @@ export default function DashboardScreen() {
             notificationCount={notificationCount}
           />
 
-          <SwipeableCard cards={cards} />
+          {lobLoading ? (
+            <View style={{ alignItems: "center", marginBottom: 24 }}>
+              <Skeleton
+                width={SCREEN_WIDTH * 0.9}
+                height={140}
+                borderRadius={0}
+              />
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  marginTop: 12,
+                  paddingHorizontal: 20,
+                }}
+              >
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  <Skeleton width={6} height={6} borderRadius={3} />
+                  <Skeleton width={6} height={6} borderRadius={3} />
+                  <Skeleton width={6} height={6} borderRadius={3} />
+                </View>
+                <Skeleton width={100} height={32} borderRadius={0} />
+              </View>
+            </View>
+          ) : (
+            <SwipeableCard
+              cards={cards}
+              onAddWidget={() => setShowAddWidgetModal(true)}
+            />
+          )}
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {lobLoading
-                ? "Loading Charts"
-                : lobError
-                ? "Charts"
-                : lobData?.lineOfBusiness?.dashboardSettings?.activeTab ===
-                  "disposition"
-                ? "Dispositions"
-                : "Charts"}
-            </Text>
+            {lobLoading ? (
+              <Skeleton width={120} height={24} borderRadius={4} />
+            ) : (
+              <Text style={styles.sectionTitle}>
+                {lobError
+                  ? "Charts"
+                  : lobData?.lineOfBusiness?.dashboardSettings?.activeTab ===
+                    "disposition"
+                    ? "Dispositions"
+                    : "Charts"}
+              </Text>
+            )}
           </View>
 
-          {selectedWidgets.length === 0 ? (
+          {(dashboardSettings?.dispositionSettings?.charts || []).length === 0 ? (
             <View
               style={[
                 styles.chartContainer,
@@ -357,161 +526,160 @@ export default function DashboardScreen() {
                   { color: palette.textSecondary },
                 ]}
               >
-                Tap &quot;Add widget&quot; to add charts to your dashboard
+                Configure charts in your dashboard settings
               </Text>
             </View>
           ) : (
-            selectedWidgets.map((widget) => (
-              <View
-                key={widget.id}
-                style={[
-                  styles.chartContainer,
-                  {
-                    backgroundColor: palette.accentWhite,
-                    borderColor: palette.mediumGray,
-                  },
-                ]}
-              >
-                {widget.type === "bar" ? (
-                  <BarChart
-                    data={[28, 12, 45, 8, 32, 15, 20]}
-                    width={SCREEN_WIDTH * 0.8}
-                    height={220}
-                    primaryColor={palette.interactivePrimary}
-                    secondaryColor={palette.interactiveSecondary}
-                    labelColor={palette.textSecondary}
-                    axisColor={palette.mediumGray}
-                    backgroundColor={palette.accentWhite}
-                    showGrid={true}
-                    gridCount={5}
-                    showXAxisLabels={true}
-                    showYAxisLabels={true}
-                    formatLabel={(index: number) => {
-                      const labels = [
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri",
-                        "Sat",
-                        "Sun",
-                      ];
-                      return labels[index] || "";
-                    }}
-                    style={styles.chart}
-                  />
-                ) : widget.type === "line" ? (
-                  <LineChart
-                    data={[28, 12, 45, 8, 32, 15, 20]}
-                    width={SCREEN_WIDTH * 0.8}
-                    height={220}
-                    lineColor={palette.interactivePrimary}
-                    labelColor={palette.textSecondary}
-                    axisColor={palette.mediumGray}
-                    backgroundColor={palette.accentWhite}
-                    showGrid={true}
-                    gridCount={5}
-                    showXAxisLabels={true}
-                    showYAxisLabels={true}
-                    formatLabel={(index: number) => {
-                      const labels = [
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri",
-                        "Sat",
-                        "Sun",
-                      ];
-                      return labels[index] || "";
-                    }}
-                    style={styles.chart}
-                  />
-                ) : widget.type === "pie" ? (
-                  <PieChart
-                    data={[
-                      { value: 28, label: "Mon" },
-                      { value: 12, label: "Tue" },
-                      { value: 45, label: "Wed" },
-                      { value: 8, label: "Thu" },
-                      { value: 32, label: "Fri" },
-                      { value: 15, label: "Sat" },
-                      { value: 20, label: "Sun" },
-                    ]}
-                    width={SCREEN_WIDTH * 0.9}
-                    height={400}
-                    colors={[
-                      palette.interactivePrimary,
-                      palette.interactiveSecondary,
-                      palette.statusSuccess,
-                      palette.statusError,
-                      palette.statusWarning,
-                      palette.primaryLighter,
-                      palette.mediumGray,
-                    ]}
-                    showLabels={true}
-                    showPercentages={true}
-                    animate={true}
-                  />
-                ) : widget.type === "doughnut" ? (
-                  <PieChart
-                    data={[
-                      { value: 28, label: "Mon" },
-                      { value: 12, label: "Tue" },
-                      { value: 45, label: "Wed" },
-                      { value: 8, label: "Thu" },
-                      { value: 32, label: "Fri" },
-                      { value: 15, label: "Sat" },
-                      { value: 20, label: "Sun" },
-                    ]}
-                    width={SCREEN_WIDTH * 0.9}
-                    height={400}
-                    colors={[
-                      palette.interactivePrimary,
-                      palette.interactiveSecondary,
-                      palette.statusSuccess,
-                      palette.statusError,
-                      palette.statusWarning,
-                      palette.primaryLighter,
-                      palette.mediumGray,
-                    ]}
-                    showLabels={true}
-                    showPercentages={true}
-                    animate={true}
-                    // strokeWidth={2 0}
-                  />
-                ) : (
+            (dashboardSettings?.dispositionSettings?.charts || []).map((chart: any) => {
+              // Generate data for Bar, Line, and Pie charts
+              let chartData: any[] = [];
+              if (["bar", "line", "pie", "doughnut"].includes(chart.type)) {
+                chartData = generateChartDataWrapper(
+                  chart.dataSource || [],
+                  chart.color || palette.interactivePrimary,
+                  chart.colors
+                );
+                chartData = (chartData || []).map((d: any) => ({
+                  ...d,
+                  value: Math.max(0, typeof d.value === "number" ? d.value : Number(d.value) || 0),
+                }));
+              }
+
+              // Check if data is available for these chart types
+              const isDataEmpty = ["bar", "line", "pie", "doughnut"].includes(chart.type) && (!chartData || chartData.length === 0);
+              const totalValue = (chartData || []).reduce((sum: number, d: any) => sum + (Number(d?.value) || 0), 0);
+              const isNoValueForPie = ["pie", "doughnut"].includes(chart.type) && totalValue <= 0;
+              const maxValue = (chartData || []).reduce((max: number, d: any) => Math.max(max, Number(d?.value) || 0), 0);
+              const isNoValueForBarLine = ["bar", "line"].includes(chart.type) && maxValue <= 0;
+
+              if ((isDataEmpty || isNoValueForPie || isNoValueForBarLine) && ["bar", "line", "pie", "doughnut"].includes(chart.type)) {
+                return (
                   <View
+                    key={chart.id}
                     style={[
-                      styles.chartPlaceholder,
-                      { backgroundColor: palette.offWhite },
+                      styles.chartContainer,
+                      styles.emptyChartContainer,
+                      {
+                        backgroundColor: palette.accentWhite,
+                        borderColor: palette.mediumGray,
+                        height: 220,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      },
                     ]}
                   >
                     <Ionicons
-                      name={widget.icon}
+                      name={chart.type === "pie" || chart.type === "doughnut" ? "pie-chart-outline" : "bar-chart-outline"}
                       size={48}
-                      color={palette.textSecondary}
+                      color={palette.mediumGray}
                     />
-                    <Text
-                      style={[
-                        styles.chartPlaceholderText,
-                        { color: palette.textSecondary },
-                      ]}
-                    >
-                      {widget.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.chartPlaceholderSubtext,
-                        { color: palette.textSecondary },
-                      ]}
-                    >
-                      Chart type coming soon
+                    <Text style={{ color: palette.textSecondary, marginTop: 12 }}>
+                      No data available for {chart.title}
                     </Text>
                   </View>
-                )}
-              </View>
-            ))
+                );
+              }
+
+              return (
+                <View
+                  key={chart.id}
+                  style={[
+                    styles.chartContainer,
+                    {
+                      backgroundColor: palette.accentWhite,
+                      borderColor: palette.mediumGray,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 10, marginLeft: 10 }]}>
+                    {chart.title}
+                  </Text>
+                  {chart.type === "bar" ? (
+                    <BarChart
+                      data={chartData}
+                      width={SCREEN_WIDTH * 0.8}
+                      height={220}
+                      primaryColor={chart.color || palette.interactivePrimary}
+                      secondaryColor={palette.interactiveSecondary}
+                      labelColor={palette.textSecondary}
+                      axisColor={palette.mediumGray}
+                      backgroundColor={palette.accentWhite}
+                      showGrid={true}
+                      gridCount={5}
+                      showXAxisLabels={true}
+                      showYAxisLabels={true}
+                      formatLabel={(index: number) => {
+                        return chartData[index]?.label || "";
+                      }}
+                      style={styles.chart}
+                    />
+                  ) : chart.type === "line" ? (
+                    <LineChart
+                      data={chartData}
+                      width={SCREEN_WIDTH * 0.8}
+                      height={220}
+                      lineColor={chart.color || palette.interactivePrimary}
+                      labelColor={palette.textSecondary}
+                      axisColor={palette.mediumGray}
+                      backgroundColor={palette.accentWhite}
+                      showGrid={true}
+                      gridCount={5}
+                      showXAxisLabels={true}
+                      showYAxisLabels={true}
+                      formatLabel={(index: number) => {
+                        return chartData[index]?.label || "";
+                      }}
+                      style={styles.chart}
+                    />
+                  ) : chart.type === "pie" ? (
+                    <PieChart
+                      data={chartData}
+                      width={SCREEN_WIDTH * 0.9}
+                      height={400}
+                      colors={chartData.map(d => d.color || chart.color || palette.interactivePrimary)}
+                      showLabels={true}
+                      showPercentages={true}
+                      animate={true}
+                    />
+                  ) : chart.type === "doughnut" ? (
+                    <PieChart
+                      data={chartData}
+                      width={SCREEN_WIDTH * 0.9}
+                      height={400}
+                      colors={chartData.map(d => d.color || chart.color || palette.interactivePrimary)}
+                      showLabels={true}
+                      showPercentages={true}
+                      animate={true}
+                      strokeWidth={20}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.chartPlaceholder,
+                        { backgroundColor: palette.offWhite },
+                      ]}
+                    >
+                      <Ionicons
+                        name="bar-chart-outline"
+                        size={48}
+                        color={palette.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.chartPlaceholderText,
+                          { color: palette.textSecondary },
+                        ]}
+                      >
+                        {chart.title} ({chart.type})
+                      </Text>
+                      <Text style={{ color: palette.textSecondary, fontSize: 12 }}>
+                        Chart type not supported on mobile
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })
           )}
 
           {/* Status Dropdown Modal */}
@@ -614,6 +782,12 @@ export default function DashboardScreen() {
 
       {/*  Custom animated header (solid + instant appearance) */}
       <AnimatedHeader title="Dashboard" scrollY={scrollY} />
+
+      <AddWidgetModal
+        visible={showAddWidgetModal}
+        onClose={() => setShowAddWidgetModal(false)}
+        onWidgetsUpdated={() => loadDispositionsIntoRedux()}
+      />
     </SafeAreaView>
   );
 }

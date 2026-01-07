@@ -10,7 +10,11 @@ export default function ForgotPasswordScreen() {
   const palette = Colors[colorScheme];
 
   const handleBack = useCallback(() => {
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)");
+    }
   }, []);
 
   return (
@@ -62,4 +66,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

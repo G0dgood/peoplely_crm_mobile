@@ -1,14 +1,17 @@
 import AnimatedHeader from "@/components/AnimatedHeader";
+import AddCustomerModal from "@/components/modals/AddCustomerModal";
+import CustomerDetailsModal from "@/components/modals/CustomerDetailsModal";
 import PageTitle from "@/components/PageTitle";
 import SearchField from "@/components/SearchField";
+import Skeleton from "@/components/Skeleton";
 import { Colors } from "@/constants/theme";
-import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePrivilege } from "@/contexts/PrivilegeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useGetSetupBookBySearchIdQuery } from "@/store/services/setupBookApi";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Animated,
   ScrollView,
@@ -26,9 +29,12 @@ type Customer = {
   lastName: string;
   email: string;
   phone: string;
+  address?: string;
 };
 
 export default function CustomerBookScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
@@ -36,22 +42,16 @@ export default function CustomerBookScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(0);
-  const [numberOfItemsPerPageList] = useState([5, 10, 15, 40]);
-  const [itemsPerPage, onItemsPerPageChange] = useState(
-    numberOfItemsPerPageList[0]
-  );
   const { canAccess } = usePrivilege();
   const canAccessModule = canAccess("customerBook");
   const canView = canAccess("customerBook", "view");
   const canCreate = canAccess("customerBook", "create");
-  const { lineOfBusinessData } = useLineOfBusiness();
-  const lobId =
-    lineOfBusinessData?.lineOfBusiness?._id ||
-    lineOfBusinessData?.lineOfBusiness?.id;
+
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [showCustomerDetailsModal, setShowCustomerDetailsModal] = useState(false);
 
   // Fetch customer by SearchId
   const {
@@ -60,11 +60,11 @@ export default function CustomerBookScreen() {
     isError,
     error,
   } = useGetSetupBookBySearchIdQuery(
-    { lineOfBusinessId: lobId || "", searchId: searchQuery },
-    { skip: !searchQuery || !lobId }
+    { lineOfBusinessId: user?.lineOfBusinessId || "", searchId: searchQuery },
+    { skip: !searchQuery || !user?.lineOfBusinessId }
   );
 
-  console.log("searchResult", searchResult);
+
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
@@ -86,27 +86,47 @@ export default function CustomerBookScreen() {
 
         const mappedCustomers: Customer[] = data.map((item) => {
           const record = item as Record<string, unknown>;
+
+          // Helper to get value case-insensitively or by specific keys
+          const getValue = (keys: string[]) => {
+            for (const key of keys) {
+              if (record[key] !== undefined && record[key] !== null) {
+                return String(record[key]);
+              }
+            }
+            return "";
+          };
+
+          // Handle Name splitting if firstName/lastName are missing
+          let firstName = getValue(["firstName", "FirstName"]);
+          let lastName = getValue(["lastName", "LastName"]);
+          const fullName = getValue(["Name", "name", "FullName"]);
+
+          if ((!firstName || !lastName) && fullName) {
+            const parts = fullName.split(" ");
+            if (!firstName) firstName = parts[0] || "";
+            if (!lastName) lastName = parts.slice(1).join(" ") || "";
+          }
+
           return {
             id: (record.id as string) || (record._id as string),
-            firstName: (record.firstName as string) || "",
-            lastName: (record.lastName as string) || "",
-            email: (record.email as string) || "",
-            phone: (record.phone as string) || "",
-            // Optionally include any additional properties here if needed
+            firstName,
+            lastName,
+            email: getValue(["email", "Email"]),
+            phone: getValue(["phone", "Phone", "phoneNumber", "Mobile"]),
+            address: getValue(["address", "Address", "Location"]), // Mapping Location/Address to address
             ...Object.fromEntries(
               Object.entries(record).filter(
                 ([key]) =>
                   ![
                     "id",
                     "_id",
-                    "firstName",
-                    "lastName",
-                    "email",
-                    "phone",
+                    "__v",
+                    // We don't exclude other keys so they appear in the table if they are in headers
                   ].includes(key)
               )
             ),
-          };
+          } as unknown as Customer;
         });
         setCustomers(mappedCustomers);
       } else {
@@ -127,22 +147,26 @@ export default function CustomerBookScreen() {
     setSearchQuery(value);
   };
 
-  const filteredCustomers = customers;
-
   const handleViewCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
   };
 
-  const filteredData = customers;
-
-  const from = page * itemsPerPage;
-  const to = Math.min((page + 1) * itemsPerPage, filteredData.length);
-  const paginated = filteredData.slice(from, to);
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-
-  useEffect(() => {
-    setPage(0);
-  }, [searchQuery]);
+  if (!canAccessModule) {
+    return (
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: palette.background }]}
+      >
+        <View style={styles.content}>
+          <View style={[styles.restrictedContainer, { borderColor: palette.mediumGray, backgroundColor: palette.accentWhite }]}>
+            <Text style={[styles.restrictedTitle, { color: palette.textPrimary }]}>Access Restricted</Text>
+            <Text style={[styles.restrictedMessage, { color: palette.textTertiary }]}>
+              You do not have access permission to view Customer Book.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -160,20 +184,23 @@ export default function CustomerBookScreen() {
       >
         <View style={styles.headerRow}>
           <PageTitle title="Customer Book" />
-          <SearchField
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-            onSearch={() => handleSearch(searchTerm)}
-            placeholder="Search"
-            autoCorrect={false}
-          />
+          {canView && (
+            <SearchField
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              onSearch={() => handleSearch(searchTerm)}
+              placeholder="Search"
+              autoCorrect={false}
+            />
+          )}
         </View>
 
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.importButton}
+            style={[styles.importButton, !canCreate && { opacity: 0.5 }]}
             activeOpacity={0.8}
-            onPress={() => router.push("/modal/add-customer")}
+            onPress={() => canCreate && setShowAddCustomerModal(true)}
+            disabled={!canCreate}
           >
             <Text style={styles.importButtonText}>Add Customer</Text>
           </TouchableOpacity>
@@ -181,142 +208,149 @@ export default function CustomerBookScreen() {
 
         {/* Sticky Column Layout */}
         <View style={{ flexDirection: "row" }}>
-          {/* Sticky First Name Column */}
-          {isLoading && (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Searching customers...</Text>
-            </View>
-          )}
+          {/* Sticky Actions Column */}
           <DataTable style={[styles.table, { width: 110 }]}>
             <DataTable.Header style={{ backgroundColor: palette.lightGray }}>
               <DataTable.Title textStyle={styles.columnLabel}>
                 Actions
               </DataTable.Title>
             </DataTable.Header>
-            {paginated.map((customer) => (
-              <DataTable.Row
-                key={customer.id}
-                style={{
-                  borderBottomWidth: 1,
-                  borderBottomColor: palette.mediumGray,
-                  backgroundColor: palette.lightGray,
-                }}
-              >
-                <DataTable.Cell numeric style={styles.actionsColumn}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    activeOpacity={0.8}
-                    onPress={() => router.push("/modal/customer-details")}
-                  >
-                    <Ionicons
-                      name="arrow-forward"
-                      size={18}
-                      color={palette.textPrimary}
-                    />
-                  </TouchableOpacity>
-                </DataTable.Cell>
-              </DataTable.Row>
-            ))}
-          </DataTable>
-
-          {/* Scrollable Remaining Columns */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-            <DataTable style={[styles.table, { minWidth: 600 }]}>
-              <DataTable.Header>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
-                  style={styles.nameColumn}
+            {isLoading
+              ? Array.from({ length: 5 }).map((_, index) => (
+                <DataTable.Row
+                  key={`sticky-skeleton-${index}`}
+                  style={{
+                    borderBottomWidth: 1,
+                    borderBottomColor: palette.mediumGray,
+                    backgroundColor: palette.lightGray,
+                  }}
                 >
-                  First Name
-                </DataTable.Title>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
-                  style={styles.nameColumn}
-                >
-                  Last Name
-                </DataTable.Title>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
-                  style={styles.emailColumn}
-                >
-                  Email
-                </DataTable.Title>
-                <DataTable.Title
-                  textStyle={styles.columnLabel}
-                  style={styles.phoneColumn}
-                >
-                  Phone
-                </DataTable.Title>
-              </DataTable.Header>
-              {paginated.map((customer) => (
+                  <DataTable.Cell style={styles.actionsColumn}>
+                    <Skeleton width={40} height={20} />
+                  </DataTable.Cell>
+                </DataTable.Row>
+              ))
+              : customers?.map((customer) => (
                 <DataTable.Row
                   key={customer.id}
                   style={{
                     borderBottomWidth: 1,
                     borderBottomColor: palette.mediumGray,
+                    backgroundColor: palette.lightGray,
                   }}
                 >
-                  <DataTable.Cell
-                    textStyle={styles.rowText}
-                    style={styles.nameColumn}
-                  >
-                    {customer.firstName}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    textStyle={styles.rowText}
-                    style={styles.nameColumn}
-                  >
-                    {customer.lastName}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    textStyle={styles.rowText}
-                    style={styles.emailColumn}
-                  >
-                    {customer.email}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    textStyle={styles.rowText}
-                    style={styles.phoneColumn}
-                  >
-                    {customer.phone}
+                  <DataTable.Cell numeric style={styles.actionsColumn}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        setSelectedCustomer(customer);
+                        setShowCustomerDetailsModal(true);
+                      }}
+                    >
+                      <Ionicons
+                        name="arrow-forward"
+                        size={18}
+                        color={palette.textPrimary}
+                      />
+                    </TouchableOpacity>
                   </DataTable.Cell>
                 </DataTable.Row>
               ))}
+          </DataTable>
+
+          {/* Scrollable Dynamic Columns */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <DataTable
+              style={[
+                styles.table,
+                {
+                  minWidth: Math.max(
+                    600,
+                    isLoading ? 600 : tableHeaders.length * 150
+                  ),
+                },
+              ]}
+            >
+              <DataTable.Header>
+                {isLoading
+                  ? Array.from({ length: 4 }).map((_, index) => (
+                    <DataTable.Title
+                      key={`header-skeleton-${index}`}
+                      style={{ width: 150, paddingHorizontal: 8 }}
+                    >
+                      <Skeleton width={80} height={15} />
+                    </DataTable.Title>
+                  ))
+                  : tableHeaders.map((header) => (
+                    <DataTable.Title
+                      key={header}
+                      textStyle={styles.columnLabel}
+                      style={{ width: 150, paddingHorizontal: 8 }}
+                    >
+                      {header}
+                    </DataTable.Title>
+                  ))}
+              </DataTable.Header>
+              {isLoading
+                ? Array.from({ length: 5 }).map((_, rIndex) => (
+                  <DataTable.Row
+                    key={`row-skeleton-${rIndex}`}
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: palette.mediumGray,
+                    }}
+                  >
+                    {Array.from({ length: 4 }).map((_, cIndex) => (
+                      <DataTable.Cell
+                        key={`cell-skeleton-${rIndex}-${cIndex}`}
+                        style={{ width: 150, paddingHorizontal: 8 }}
+                      >
+                        <Skeleton width={100} height={15} />
+                      </DataTable.Cell>
+                    ))}
+                  </DataTable.Row>
+                ))
+                : customers?.map((customer) => (
+                  <DataTable.Row
+                    key={customer.id}
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: palette.mediumGray,
+                    }}
+                  >
+                    {tableHeaders.map((header) => (
+                      <DataTable.Cell
+                        key={`${customer.id}-${header}`}
+                        textStyle={styles.rowText}
+                        style={{ width: 150, paddingHorizontal: 8 }}
+                      >
+                        {String((customer as any)[header] || "")}
+                      </DataTable.Cell>
+                    ))}
+                  </DataTable.Row>
+                ))}
             </DataTable>
           </ScrollView>
         </View>
 
-        <DataTable.Pagination
-          page={page}
-          numberOfPages={totalPages}
-          onPageChange={(page) => setPage(page)}
-          label={`${from + 1}-${to} of ${filteredData.length}`}
-          numberOfItemsPerPageList={numberOfItemsPerPageList}
-          numberOfItemsPerPage={itemsPerPage}
-          onItemsPerPageChange={onItemsPerPageChange}
-          showFastPaginationControls
-          selectPageDropdownLabel={"Rows per page"}
-          theme={{
-            roundness: 0,
-            colors: {
-              primary: palette.interactivePrimary,
-              text: palette.textPrimary,
-              placeholder: palette.textSecondary,
-              backdrop:
-                colorScheme === "dark"
-                  ? palette.background
-                  : palette.accentWhite,
-              surface:
-                colorScheme === "dark"
-                  ? palette.bgPrimary
-                  : palette.accentWhite,
-              onSurface: palette.textPrimary,
-            },
-          }}
-        />
+
       </Animated.ScrollView>
 
       <AnimatedHeader title="Customer Book" scrollY={scrollY} />
+
+      <AddCustomerModal
+        visible={showAddCustomerModal}
+        onClose={() => setShowAddCustomerModal(false)}
+      />
+
+      {selectedCustomer && (
+        <CustomerDetailsModal
+          visible={showCustomerDetailsModal}
+          onClose={() => setShowCustomerDetailsModal(false)}
+          customer={selectedCustomer}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -412,12 +446,20 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       // borderWidth: 1,
       // borderColor: palette.mediumGray,
     },
-    loadingContainer: {
-      paddingVertical: 20,
+    restrictedContainer: {
+      padding: 24,
+      borderRadius: 12,
+      borderWidth: 1,
       alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
     },
-    loadingText: {
+    restrictedTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    restrictedMessage: {
       fontSize: 14,
-      color: palette.textSecondary,
+      textAlign: "center",
     },
   });

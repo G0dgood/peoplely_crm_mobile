@@ -4,6 +4,7 @@ import { Colors } from "@/constants/theme";
 import { usePrivilege } from "@/contexts/PrivilegeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ionicons } from "@expo/vector-icons";
+import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
 import React from "react";
@@ -53,7 +54,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      tabBar={(props) => <AnimatedTabBar {...props} />}
+      tabBar={(props: React.JSX.IntrinsicAttributes & BottomTabBarProps) => <AnimatedTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor:
@@ -85,7 +86,7 @@ export default function TabLayout() {
             options={{
               href: isVisible ? undefined : null,
               title: item.label,
-              tabBarIcon: ({ color }) => (
+              tabBarIcon: ({ color }: { color: string }) => (
                 <AnimatedTabIcon name={TAB_ICONS[item.id]} color={color} />
               ),
             }}

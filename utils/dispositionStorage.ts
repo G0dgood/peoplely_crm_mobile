@@ -6,23 +6,58 @@ const SYNCED_DISPOSITIONS_KEY = "@synced_dispositions";
 
 export interface DispositionData {
   id: string;
-  callAnswered: string;
-  reasonForNonPayment: string;
-  reasonForNotWatching: string;
-  commitmentDate: string;
-  amount: string;
-  date: string;
-  time: string;
-  comment: string;
+  customerId?: string;
+  callAnswered?: string;
+  reasonForNonPayment?: string;
+  reasonForNotWatching?: string;
+  commitmentDate?: string;
+  amount?: string;
+  date?: string;
+  time?: string;
+  comment?: string;
   agentName: string;
   agentId: string;
   dateContacted: string;
   synced: boolean;
   createdAt: number;
+  fillDisposition?: any[];
+  customerName?: string;
+  lineOfBusinessId?: string;
+  [key: string]: any;
 }
 
+// Helper to save directly to synced storage (used when API save is successful)
+export const saveSyncedDisposition = async (
+  fillDisposition: any[],
+  customerId: string,
+  customerName: string,
+  agentName: string | undefined,
+  agentId: string | undefined,
+  lineOfBusinessId: string | undefined
+) => {
+  try {
+    const disposition: DispositionData = {
+      id: `disp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      customerId,
+      agentName: agentName || "Unknown",
+      agentId: agentId || "Unknown",
+      dateContacted: new Date().toLocaleString(),
+      synced: true,
+      createdAt: Date.now(),
+      fillDisposition,
+      customerName,
+      lineOfBusinessId
+    };
+    const synced = await getSyncedDispositions();
+    synced.push(disposition);
+    await AsyncStorage.setItem(SYNCED_DISPOSITIONS_KEY, JSON.stringify(synced));
+  } catch (error) {
+    console.error("Error saving synced disposition:", error);
+  }
+};
+
 // Save disposition data (offline or online)
-export const saveDisposition = async (data: Omit<DispositionData, "id" | "synced" | "createdAt">): Promise<DispositionData> => {
+export const saveDisposition = async (data: any): Promise<DispositionData> => {
   const networkState = await NetInfo.fetch();
   const isOnline = networkState.isConnected ?? false;
 
@@ -89,7 +124,9 @@ export const getSyncedDispositions = async (): Promise<DispositionData[]> => {
   }
 };
 
-// Sync a single disposition (simulate API call)
+export const getOfflineDispositions = async (): Promise<DispositionData[]> => {
+  return getPendingDispositions();
+};
 const syncDisposition = async (disposition: DispositionData): Promise<void> => {
   // Simulate API call - replace with actual API endpoint
   return new Promise((resolve, reject) => {

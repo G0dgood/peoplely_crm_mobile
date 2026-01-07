@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -12,12 +13,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-import { createModalStyles } from "./shared";
+import { createModalStyles } from "@/app/modal/shared";
 
 const WIDGET_STORAGE_KEY = "@dashboard_selected_widgets";
 
@@ -188,7 +188,13 @@ const createStyles = (palette: typeof Colors.light) =>
     },
   });
 
-export default function AddWidgetModal() {
+type AddWidgetModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  onWidgetsUpdated?: () => void;
+};
+
+export default function AddWidgetModal({ visible, onClose, onWidgetsUpdated }: AddWidgetModalProps) {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
@@ -198,20 +204,25 @@ export default function AddWidgetModal() {
 
   // Load current selected widgets
   useEffect(() => {
-    const loadWidgets = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(WIDGET_STORAGE_KEY);
-        if (saved) {
-          setSelectedWidgets(JSON.parse(saved));
-        }
-      } catch (error) {
-        console.error("Error loading widgets:", error);
-      } finally {
-        setIsLoading(false);
+    if (visible) {
+      loadWidgets();
+    }
+  }, [visible]);
+
+  const loadWidgets = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(WIDGET_STORAGE_KEY);
+      if (saved) {
+        setSelectedWidgets(JSON.parse(saved));
+      } else {
+        setSelectedWidgets([]);
       }
-    };
-    loadWidgets();
-  }, []);
+    } catch (error) {
+      console.error("Error loading widgets:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const toggleWidget = (widgetId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -228,109 +239,133 @@ export default function AddWidgetModal() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       await AsyncStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(selectedWidgets));
-      router.back();
+      if (onWidgetsUpdated) {
+        onWidgetsUpdated();
+      }
+      onClose();
     } catch (error) {
       console.error("Error saving widgets:", error);
-      router.back();
+      onClose();
     }
   };
 
   const handleCancel = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.back();
+    onClose();
   };
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-      edges={["top", "left", "right"]}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={handleCancel}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: "rgba(0,0,0,0.5)", padding: 0 }]}
+        edges={["top", "left", "right", "bottom"]}
       >
-        <View style={[styles.container, { backgroundColor: palette.accentWhite }]}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleCancel}
-            activeOpacity={0.7}
+        <TouchableOpacity
+          style={{ flex: 1, width: "100%", alignItems: "center", justifyContent: "center", padding: 20 }}
+          activeOpacity={1}
+          onPress={handleCancel}
+        >
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
-            <Ionicons name="close" size={18} color={palette.textPrimary} />
-          </TouchableOpacity>
-          <View style={styles.header}>
-            <Text style={styles.title}>Add Widget</Text>
-            <Text style={styles.subtitle}>
-              Select charts to add to your dashboard
-            </Text>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.widgetList}
-            showsVerticalScrollIndicator={false}
-          >
-            {AVAILABLE_WIDGETS.map((widget) => {
-              const isSelected = selectedWidgets.includes(widget.id);
-              return (
-                <TouchableOpacity
-                  key={widget.id}
-                  style={[
-                    styles.widgetItem,
-                    isSelected && styles.widgetItemSelected,
-                  ]}
-                  onPress={() => toggleWidget(widget.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.widgetIcon}>
-                    <Ionicons
-                      name={widget.icon}
-                      size={20}
-                      color={palette.interactivePrimary}
-                    />
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+              style={{ width: "100%", alignItems: "center" }}
+            >
+              <View style={[styles.container, { backgroundColor: palette.accentWhite }]}>
+                <View style={styles.modalHeader}>
+                  <View>
+                    <Text style={styles.title}>Add Widget</Text>
+                    <Text style={styles.subtitle}>
+                      Select charts to add to your dashboard
+                    </Text>
                   </View>
-                  <View style={styles.widgetInfo}>
-                    <Text style={styles.widgetName}>{widget.name}</Text>
-                    <Text style={styles.widgetDescription}>{widget.description}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.checkbox,
-                      isSelected && styles.checkboxSelected,
-                    ]}
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={handleCancel}
+                    activeOpacity={0.7}
                   >
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark"
-                        size={16}
-                        color={palette.textInverse}
-                      />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                    <Ionicons name="close" size={24} color={palette.textPrimary} />
+                  </TouchableOpacity>
+                </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancel}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+                <ScrollView
+                  contentContainerStyle={styles.widgetList}
+                  showsVerticalScrollIndicator={false}
+                  style={{ flex: 1 }}
+                >
+                  {AVAILABLE_WIDGETS.map((widget) => {
+                    const isSelected = selectedWidgets.includes(widget.id);
+                    return (
+                      <TouchableOpacity
+                        key={widget.id}
+                        style={[
+                          styles.widgetItem,
+                          isSelected && styles.widgetItemSelected,
+                        ]}
+                        onPress={() => toggleWidget(widget.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.widgetIcon}>
+                          <Ionicons
+                            name={widget.icon}
+                            size={20}
+                            color={palette.interactivePrimary}
+                          />
+                        </View>
+                        <View style={styles.widgetInfo}>
+                          <Text style={styles.widgetName}>{widget.name}</Text>
+                          <Text style={styles.widgetDescription}>{widget.description}</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isSelected && styles.checkboxSelected,
+                          ]}
+                        >
+                          {isSelected && (
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color={palette.textInverse}
+                            />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={styles.footer}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancel}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={handleAdd}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.addButtonText}>
+                      {selectedWidgets.length > 0 ? `Add (${selectedWidgets.length})` : "Add"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAdd}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.addButtonText}>
-                {selectedWidgets.length > 0 ? `Add (${selectedWidgets.length})` : "Add"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
+      </SafeAreaView>
+    </Modal>
   );
 }
-

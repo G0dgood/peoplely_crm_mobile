@@ -1,13 +1,14 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import React, { useCallback, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+import NotesModal from "@/components/modals/NotesModal";
 const NOTE_STORAGE_KEY = "@dashboard_notes";
 
 interface Note {
@@ -23,6 +24,7 @@ export default function NoteCard() {
   const styles = React.useMemo(() => createStyles(palette), [palette]);
 
   const [notes, setNotes] = useState<Note[]>([]);
+  const [showNotesModal, setShowNotesModal] = useState(false);
 
   // Load notes from storage on mount and when screen comes into focus
   useFocusEffect(
@@ -45,7 +47,7 @@ export default function NoteCard() {
 
   const handleOpenNotes = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push("/modal/notes");
+    setShowNotesModal(true);
   };
 
   const getPreviewText = (content: string, maxLength: number = 100) => {
@@ -101,6 +103,14 @@ export default function NoteCard() {
           )}
         </View>
       )}
+
+      <NotesModal
+        visible={showNotesModal}
+        onClose={() => {
+          setShowNotesModal(false);
+          loadNotes();
+        }}
+      />
     </TouchableOpacity>
   );
 }

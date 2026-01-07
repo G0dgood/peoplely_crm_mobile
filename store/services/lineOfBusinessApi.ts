@@ -1,3 +1,4 @@
+import { baseUrl } from "@/shared/baseUrl";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface CreateLineOfBusinessRequest {
@@ -19,7 +20,7 @@ export const lineOfBusinessApi = createApi({
   reducerPath: "lineOfBusinessApi",
   tagTypes: ["LineOfBusiness"],
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.base_url,
+    baseUrl,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any).auth?.token;
       if (token) {
@@ -44,39 +45,9 @@ export const lineOfBusinessApi = createApi({
       query: (id) => `api/v1/line-of-business/${id}`,
       providesTags: ["LineOfBusiness"],
     }),
-    getLineOfBusinessByCompanyId: builder.query<any, string>({
-      query: (companyId) => `api/v1/line-of-business/company/${companyId}`,
-      providesTags: ["LineOfBusiness"],
-    }),
-    getLineOfBusinessByCompanyIdForheader: builder.query<any, string>({
-      query: (companyId) =>
-        `api/v1/line-of-business/company/${companyId}/header`,
-      providesTags: ["LineOfBusiness"],
-    }),
-    updateLineOfBusiness: builder.mutation<any, { id: string; data: any }>({
-      query: ({ id, data }) => ({
-        url: `api/v1/line-of-business/${id}`,
-        method: "PATCH",
-        body: data,
-      }),
-      invalidatesTags: ["LineOfBusiness"],
-    }),
-    deleteLineOfBusiness: builder.mutation<any, string>({
-      query: (id) => ({
-        url: `api/v1/line-of-business/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["LineOfBusiness"],
-    }),
   }),
 });
 
-export const {
-  useCreateLineOfBusinessMutation,
+export const { 
   useGetLineOfBusinessQuery,
-  useUpdateLineOfBusinessMutation,
-  useDeleteLineOfBusinessMutation,
-  useGetLineOfBusinessByCompanyIdQuery,
-  useLazyGetLineOfBusinessByCompanyIdQuery,
-  useGetLineOfBusinessByCompanyIdForheaderQuery,
 } = lineOfBusinessApi;

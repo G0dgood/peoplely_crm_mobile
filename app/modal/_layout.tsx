@@ -5,15 +5,12 @@ export default function ModalLayout() {
   return (
     <Stack
       screenOptions={{
-        presentation: "modal",
+        presentation: "transparentModal",
+        animation: "fade",
         headerShown: false,
         contentStyle: { backgroundColor: "transparent" },
       }}
     >
-      <Stack.Screen name="add-customer" />
-      <Stack.Screen name="customer-details" />
-      <Stack.Screen name="disposition" />
-      <Stack.Screen name="sms" />
     </Stack>
   );
 }

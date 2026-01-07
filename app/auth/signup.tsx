@@ -10,7 +10,11 @@ export default function SignupScreen() {
   const palette = Colors[colorScheme];
 
   const handleBack = useCallback(() => {
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/auth/login");
+    }
   }, []);
 
   return (
@@ -56,4 +60,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

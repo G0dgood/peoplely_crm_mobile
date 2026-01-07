@@ -1,12 +1,12 @@
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useGetLineOfBusinessQuery } from "@/store/services/lineOfBusinessApi";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useGetLineOfBusinessForTeamMemberQuery } from "@/store/services/teamMembersApi";
 import React, {
   createContext,
   ReactNode,
   useContext,
-  useEffect,
-  useState,
+  useEffect
 } from "react";
 
 interface LineOfBusinessContextType {
@@ -29,36 +29,35 @@ export const LineOfBusinessProvider: React.FC<LineOfBusinessProviderProps> = ({
   children,
   initialLineOfBusinessId,
 }) => {
-  const [selectedLineOfBusinessId, setSelectedLineOfBusinessIdState] = useState<
-    string | null
-  >(initialLineOfBusinessId || null);
+  const { user } = useAuth();
+  const [selectedLineOfBusinessId, setSelectedLineOfBusinessId] = React.useState<string | null>(
+    user?.lineOfBusinessId || initialLineOfBusinessId || null
+  );
 
+  // Fetch LOB(s) for the team member if no LOB is selected
+  const { data: teamMemberLobData } = useGetLineOfBusinessForTeamMemberQuery(user?.lineOfBusinessId || "", {
+    skip: !user?.lineOfBusinessId || !!user?.lineOfBusinessId,
+  });
+
+  // Automatically select LOB if available and none selected
   useEffect(() => {
-    const load = async () => {
-      const saved = await AsyncStorage.getItem("selectedLineOfBusinessId");
-      if (saved) {
-        setSelectedLineOfBusinessIdState(saved);
-      }
-    };
-    load();
-  }, []);
+    // Handle if response is array or single object
+    // const lob = Array.isArray(teamMemberLobData) ? teamMemberLobData[0] : teamMemberLobData;
+    // const lobId = lob?._id || lob?.id;
 
-  const setSelectedLineOfBusinessId = (id: string | null) => {
-    setSelectedLineOfBusinessIdState(id);
-    if (id) {
-      AsyncStorage.setItem("selectedLineOfBusinessId", id).catch(() => { });
-    } else {
-      AsyncStorage.removeItem("selectedLineOfBusinessId").catch(() => { });
+    if (user?.lineOfBusinessId) {
+      setSelectedLineOfBusinessId(user?.lineOfBusinessId);
     }
-  };
+  }, [user?.lineOfBusinessId]);
 
   const {
     data: lineOfBusinessData,
     isLoading,
     isFetching,
-  } = useGetLineOfBusinessQuery(selectedLineOfBusinessId || "", {
-    skip: !selectedLineOfBusinessId || selectedLineOfBusinessId === "new",
+  } = useGetLineOfBusinessQuery(user?.lineOfBusinessId || "", {
+    skip: !user?.lineOfBusinessId || user?.lineOfBusinessId === "new",
   });
+
 
   return (
     <LineOfBusinessContext.Provider

@@ -28,6 +28,7 @@ type UpdateTeamMemberResponse = any;
 
 export const teamMembersApi = createApi({
   reducerPath: "teamMembersApi",
+  tagTypes: ["Statuses"],
   baseQuery: fetchBaseQuery({
     baseUrl,
     prepareHeaders: (headers) => {
@@ -71,6 +72,7 @@ export const teamMembersApi = createApi({
         url: `/api/v1/statuses/line-of-business/${lobId}`,
         method: "GET",
       }),
+      providesTags: ["Statuses"],
     }),
     changePassword: builder.mutation<
       ChangePasswordResponse,

@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { notificationApi } from "../services/notificationApi";
 
 export interface Notification {
   id: string;
@@ -9,7 +10,7 @@ export interface Notification {
   createdAt: number;
 }
 
-interface NotificationState {
+export interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
 }
@@ -64,6 +65,15 @@ const notificationSlice = createSlice({
       state.unreadCount = 0;
     },
   },
+  extraReducers: (builder) => {
+    builder.addMatcher(
+      notificationApi.endpoints.getNotificationsByLineOfBusinessId.matchFulfilled,
+      (state, { payload }) => {
+        const list = payload?.notifications || [];
+        state.unreadCount = list.filter((n: any) => !n.isRead).length;
+      }
+    );
+  },
 });
 
 export const {
@@ -75,4 +85,3 @@ export const {
   clearNotifications,
 } = notificationSlice.actions;
 export default notificationSlice.reducer;
-

@@ -293,8 +293,7 @@ export default function SettingsScreen() {
         error?.error ||
         error?.message ||
         "Password update failed";
-      Alert.alert("Error", message);
-      console.log(message);
+      Alert.alert("Error", message); 
     } finally {
       setChangingPassword(false);
     }

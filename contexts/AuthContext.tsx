@@ -3,6 +3,7 @@ import {
   useLogoutMutation,
 } from "@/store/services/teamMembersApi";
 import { setCredentials } from "@/store/slices/authSlice";
+import { setAuthToken } from "@/utils/authToken";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
@@ -13,12 +14,18 @@ import React, {
 } from "react";
 import { useDispatch } from "react-redux";
 
-type User = {
+export type User = {
   roleId?: any;
   id: string;
   email: string;
   name?: string;
   roleName?: string;
+  lineOfBusinessId?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+  companyId?: string;
+  company?: any;
 };
 
 // Authentication tokens
@@ -114,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const dispatch = useDispatch();
   const [tokens, setTokensState] = useState<AuthTokens | null>(null);
 
-  console.log("user----->", user);
+
 
   useEffect(() => {
     const loadAuthData = async () => {
@@ -125,6 +132,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setTokensState({ accessToken: storedToken });
+          setAuthToken(String(storedToken));
+          try {
+            dispatch(
+              setCredentials({
+                user: {
+                  id: String(parsedUser?.id || ""),
+                  email: String(parsedUser?.email || ""),
+                  name: String(parsedUser?.name || ""),
+                  role: String(parsedUser?.roleName || ""),
+                },
+                token: String(storedToken),
+              })
+            );
+          } catch { }
         } else {
           const stored = await AsyncStorage.getItem(storageKey);
           if (stored) {
@@ -134,10 +155,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
             }
             if (parsed.tokens) {
               setTokensState(parsed.tokens);
+              setAuthToken(String(parsed.tokens?.accessToken || ""));
+              try {
+                dispatch(
+                  setCredentials({
+                    user: {
+                      id: String(parsed.user?.id || ""),
+                      email: String(parsed.user?.email || ""),
+                      name: String(parsed.user?.name || ""),
+                      role: String(parsed.user?.roleName || ""),
+                    },
+                    token: String(parsed.tokens?.accessToken || ""),
+                  })
+                );
+              } catch { }
             }
           }
         }
-      } catch {
+      } catch (e) {
+        console.error("Auth hydration error:", e);
         await AsyncStorage.removeItem(storageKey);
       } finally {
         setIsLoading(false);
@@ -159,8 +195,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     password: string
   ): Promise<AuthResult> => {
     try {
-      setIsLoading(true);
       const response = await login({ userId: email, password }).unwrap();
+
       setAuthData(response);
 
       const resolvedEmail =
@@ -174,12 +210,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         response?.user?.name || response?.teamMember?.name || undefined;
       const resolvedRoleName =
         response?.teamMember?.role?.roleName || response?.user?.role || "agent";
+      const resolvedLineOfBusinessId =
+        response?.teamMember?.lineOfBusinessId ||
+        response?.user?.lineOfBusinessId;
+
 
       const nextUser: User = {
         id: String(resolvedId),
         email: String(resolvedEmail),
         name: resolvedName || "",
         roleName: resolvedRoleName,
+        lineOfBusinessId: resolvedLineOfBusinessId,
         roleId: undefined
       };
 
@@ -203,13 +244,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       }
 
       setUser(nextUser);
-      setTokensState({ accessToken: response.accessToken });
+      setTokensState({ accessToken: response.teamMember.token });
+      setAuthToken(String(response.teamMember.token));
       try {
         await AsyncStorage.setItem("peoplely-user", JSON.stringify(nextUser));
-        await AsyncStorage.setItem("token", String(response.accessToken));
+        await AsyncStorage.setItem("token", String(response.teamMember.token));
         await AsyncStorage.setItem(
           storageKey,
-          JSON.stringify({ user: nextUser, tokens: { accessToken: response.accessToken }, savedAt: Date.now() })
+          JSON.stringify({ user: nextUser, tokens: { accessToken: response.teamMember.token }, savedAt: Date.now() })
         );
       } catch { }
       // Dispatch to Redux store
@@ -221,14 +263,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
             name: nextUser.name || "",
             role: nextUser.roleName || "",
           },
-          token: response.accessToken,
+          token: response.teamMember.token,
         })
       );
 
-      setIsLoading(false);
       return { success: true, user: nextUser };
     } catch (error) {
-      setIsLoading(false);
       const anyErr: any = error as any;
       const message =
         anyErr?.data?.message ||
@@ -245,7 +285,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     name?: string
   ): Promise<AuthResult> => {
     try {
-      setIsLoading(true);
       // TODO: Implement actual API call
       // For now, simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -258,10 +297,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       };
 
       setUser(mockUser);
-      setIsLoading(false);
       return { success: true, user: mockUser };
     } catch (error) {
-      setIsLoading(false);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Sign up failed",
@@ -271,7 +308,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
 
   const signOut = async (): Promise<void> => {
     try {
-      setIsLoading(true);
       const tm = (authData && (authData.user || authData.teamMember)) || {};
       const uid = tm.userId || tm.username || user?.email || user?.id || "";
       if (uid) {
@@ -282,14 +318,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setUser(null);
       setAuthData(null);
       setTokensState(null);
+      setAuthToken(null);
       await AsyncStorage.removeItem("peoplely-user");
       await AsyncStorage.removeItem("token");
       await AsyncStorage.removeItem("userPrivileges");
       await AsyncStorage.removeItem(storageKey);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error signing out:", error);
-      setIsLoading(false);
     }
   };
 

@@ -3,32 +3,13 @@ import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/theme";
 
 export const CUSTOMER_DETAILS = {
-  firstName: "Jane",
-  lastName: "Doe",
-  email: "janedoe@example.com",
-  phone: "08023456789",
-  middleName: "-",
-  address: "-",
-  history: [
-    {
-      date: "April 7, 2025",
-      time: "9:14 AM",
-      agent: "John Doe",
-      duration: "2m 23s",
-    },
-    {
-      date: "March 23, 2025",
-      time: "8:30 AM",
-      agent: "Jane Doe",
-      duration: "1m 56s",
-    },
-    {
-      date: "March 23, 2025",
-      time: "8:30 AM",
-      agent: "Jane Doe",
-      duration: "1m 56s",
-    },
-  ],
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  middleName: "",
+  address: "",
+  history: [],
 };
 
 export const createModalStyles = (palette: (typeof Colors)["light"]) =>
@@ -36,38 +17,38 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
     safeArea: {
       flex: 1,
       justifyContent: "center",
-      paddingHorizontal: 16,
+      alignItems: "center",
+      padding: 20,
     },
     flex: {
-      flex: 1,
+      width: "100%",
+      alignItems: "center",
       justifyContent: "center",
     },
     container: {
+      width: "100%",
+      maxWidth: 400,
       padding: 24,
       gap: 20,
       maxHeight: "80%",
-      shadowColor: palette.shadowColor,
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 16 },
-      shadowRadius: 32,
-      elevation: 6,
+      height: "80%",
+      // minHeight: "50%",
+      borderRadius: 0,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+
+    modalFooter: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      marginTop: 8,
     },
     closeButton: {
-      position: "absolute",
-      zIndex: 200,
-      top: 16,
-      right: 16,
-      width: 36,
-      height: 36,
-      borderRadius: 0,
-      backgroundColor: palette.bgSecondary,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: palette.shadowColor,
-      shadowOpacity: 0.08,
-      shadowOffset: { width: 0, height: 4 },
-      shadowRadius: 8,
-      elevation: 2,
+      padding: 4,
     },
     header: {
       flexDirection: "column",
@@ -218,7 +199,13 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
     detailGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 20,
+      gap: 16,
+    },
+    // Modal Selection Styles
+
+    fieldLabel: {
+      fontSize: 14,
+      fontWeight: "500",
     },
     historyTable: {
       backgroundColor: palette.accentWhite,
@@ -241,41 +228,32 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       paddingHorizontal: 8,
     },
     historyCell: {
-      fontSize: 13,
+      fontSize: 14,
       color: palette.textPrimary,
       paddingVertical: 12,
       paddingHorizontal: 8,
     },
     historyLink: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "600",
       color: palette.interactivePrimary,
       paddingVertical: 12,
       paddingHorizontal: 8,
     },
     dateColumn: {
-      flex: 1.5,
-      minWidth: 140,
+      width: 150,
       paddingHorizontal: 8,
     },
     timeColumn: {
-      flex: 1,
-      minWidth: 100,
+      width: 150,
       paddingHorizontal: 8,
     },
     agentColumn: {
-      flex: 1.5,
-      minWidth: 120,
-      paddingHorizontal: 8,
-    },
-    durationColumn: {
-      flex: 1,
-      minWidth: 100,
+      width: 150,
       paddingHorizontal: 8,
     },
     statusColumn: {
-      flex: 1,
-      minWidth: 100,
+      width: 150,
       paddingHorizontal: 8,
     },
     syncBadge: {
@@ -293,8 +271,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       fontWeight: "600",
     },
     actionColumn: {
-      flex: 1.2,
-      minWidth: 120,
+      width: 150,
       paddingHorizontal: 8,
     },
     twoColumn: {
@@ -318,14 +295,7 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       borderRadius: 0,
       overflow: "hidden",
     },
-    modalHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: palette.mediumGray,
-    },
+
     modalTitle: {
       fontSize: 18,
       fontWeight: "600",
@@ -382,6 +352,10 @@ export const createModalStyles = (palette: (typeof Colors)["light"]) =>
       fontWeight: "600",
     },
   });
+
+export default function SharedModal() {
+  return null;
+}
 
 export const createDetailStyles = (palette: (typeof Colors)["light"]) =>
   StyleSheet.create({
