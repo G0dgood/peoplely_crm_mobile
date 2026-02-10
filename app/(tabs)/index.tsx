@@ -596,7 +596,7 @@ export default function DashboardScreen() {
                   </Text>
                   {chart.type === "bar" ? (
                     <BarChart
-                      data={chartData}
+                      data={chartData.map((d: any) => d.value)}
                       width={SCREEN_WIDTH * 0.8}
                       height={220}
                       primaryColor={chart.color || palette.interactivePrimary}
@@ -615,7 +615,7 @@ export default function DashboardScreen() {
                     />
                   ) : chart.type === "line" ? (
                     <LineChart
-                      data={chartData}
+                      data={chartData.map((d: any) => d.value)}
                       width={SCREEN_WIDTH * 0.8}
                       height={220}
                       lineColor={chart.color || palette.interactivePrimary}
