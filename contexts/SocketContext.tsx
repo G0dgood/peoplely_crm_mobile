@@ -25,11 +25,11 @@ const defaultValue: SocketContextValue = {
   isConnected: false,
   isConnecting: false,
   error: null,
-  connect: () => {},
-  disconnect: () => {},
-  emit: () => {},
-  on: () => {},
-  off: () => {},
+  connect: () => { },
+  disconnect: () => { },
+  emit: () => { },
+  on: () => { },
+  off: () => { },
 };
 
 const SocketContext = createContext<SocketContextValue>(defaultValue);
@@ -64,7 +64,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
   const connect = (url?: string) => {
     if (socketRef.current?.connected) {
-      console.log("Socket already connected");
       return;
     }
 
@@ -87,22 +86,20 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
         timeout: 20000,
         auth: user
           ? {
-              userId: user.id,
-              email: user.email,
-            }
+            userId: user.id,
+            email: user.email,
+          }
           : undefined,
       });
 
       // Connection event handlers
       newSocket.on("connect", () => {
-        console.log("Socket connected:", newSocket.id);
         setIsConnected(true);
         setIsConnecting(false);
         setError(null);
       });
 
       newSocket.on("disconnect", (reason) => {
-        console.log("Socket disconnected:", reason);
         setIsConnected(false);
         setIsConnecting(false);
       });
@@ -114,7 +111,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       });
 
       newSocket.on("reconnect", (attemptNumber) => {
-        console.log("Socket reconnected after", attemptNumber, "attempts");
         setIsConnected(true);
         setError(null);
       });

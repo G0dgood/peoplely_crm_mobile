@@ -32,98 +32,7 @@ type TeamMember = {
   status: "Logged In" | "Logged Out" | "In Meeting" | string;
 };
 
-const TEAM_MEMBERS: TeamMember[] = [
-  {
-    id: "agent.10167",
-    fullName: "Chinwe Felicia, Ugwumba",
-    email: "chinwe@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "A",
-    status: "Logged In",
-  },
-  {
-    id: "agent.10234",
-    fullName: "George Atuk Atuk, George",
-    email: "george.atck@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "B",
-    status: "Logged In",
-  },
-  {
-    id: "10398",
-    fullName: "Emmanuel, Omonigho",
-    email: "emmanuelo@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "A",
-    status: "Logged Out",
-  },
-  {
-    id: "10399",
-    fullName: "Ugochukwu, Asuzu",
-    email: "ugochuwuasuzu@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "A",
-    status: "Logged Out",
-  },
-  {
-    id: "agent.10398",
-    fullName: "Emmanuel, Omonigho",
-    email: "emmanuelolo@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "B",
-    status: "Logged In",
-  },
-  {
-    id: "agent.10541",
-    fullName: "Amarachi, Okoro",
-    email: "amarachi.okoro@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "C",
-    status: "Logged In",
-  },
-  {
-    id: "agent.10542",
-    fullName: "Victoria, Falade",
-    email: "jadesola.ayeni@outcess.com",
-    phone: "08098765432",
-    role: "QA",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "QA",
-    status: "Logged In",
-  },
-  {
-    id: "agent.10572",
-    fullName: "Mariam Opeyemi, Balogun",
-    email: "mariamobalogun@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "A",
-    status: "Logged Out",
-  },
-  {
-    id: "agent.10573",
-    fullName: "Elizabeth Fikayo, Babalola",
-    email: "elizabethbabalola@outcess.com",
-    phone: "08098765432",
-    role: "Agent",
-    supervisor: "Motunrayo Adelanwaa",
-    team: "A",
-    status: "Logged In",
-  },
-];
+
 
 export default function TeamMembersScreen() {
   const colorScheme = useColorScheme() ?? "light";
@@ -135,7 +44,7 @@ export default function TeamMembersScreen() {
   const { user } = useAuth();
   const { socket } = useSocket();
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(TEAM_MEMBERS);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [query, setQuery] = useState("");
   const [selectedSupervisor, setSelectedSupervisor] =
     useState("All Supervisors");

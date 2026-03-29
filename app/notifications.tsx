@@ -78,18 +78,16 @@ export default function NotificationsScreen() {
 
     // Join the Line of Business room
     socket.emit("joinLineOfBusiness", user?.lineOfBusinessId);
-    console.log(`Socket: Joined Line of Business room ${user?.lineOfBusinessId}`);
+     
 
     // Listen for status list updates
-    const handleStatusListUpdate = (data: unknown) => {
-      console.log("Socket: Status list updated", data);
+    const handleStatusListUpdate = (data: unknown) => { 
       // Invalidate RTK Query cache for statuses
       dispatch(teamMembersApi.util.invalidateTags(['Statuses']));
     };
 
     // Listen for notification updates
-    const handleNotificationUpdate = () => {
-      console.log("Socket: Notification updated");
+    const handleNotificationUpdate = () => { 
       refetchNotifications();
     };
 
