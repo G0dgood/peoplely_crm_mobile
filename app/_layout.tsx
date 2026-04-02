@@ -22,7 +22,7 @@ import { Provider } from "react-redux";
 
 import NetworkStatusBanner from "@/components/NetworkStatusBanner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { LineOfBusinessProvider } from "@/contexts/LineOfBusinessContext";
+import { CampaignProvider } from "@/contexts/CampaignContext";
 import { PrivilegeProvider } from "@/contexts/PrivilegeContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
@@ -178,7 +178,7 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <AuthProvider>
-        <LineOfBusinessProvider>
+        <CampaignProvider>
           <PrivilegeProvider>
             <ThemeProvider>
               <SocketProvider>
@@ -186,7 +186,7 @@ export default function RootLayout() {
               </SocketProvider>
             </ThemeProvider>
           </PrivilegeProvider>
-        </LineOfBusinessProvider>
+        </CampaignProvider>
       </AuthProvider>
     </Provider>
   );

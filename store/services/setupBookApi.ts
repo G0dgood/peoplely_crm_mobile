@@ -9,7 +9,7 @@ export interface SetupBook {
 
 export interface CreateSetupBookRequest {
   companyId: string;
-  lineOfBusinessId: string;
+  campaignId: string;
   file: File;
 }
 
@@ -32,17 +32,17 @@ export interface SetupBookResponse {
 }
 
 export interface UpdateSetupBookRecordsRequest {
-  lineOfBusinessId: string;
+  campaignId: string;
   data: any;
 }
 
 export interface DeleteSetupBookRecordsRequest {
-  lineOfBusinessId: string;
+  campaignId: string;
   id: string;
 }
 
 export interface DeleteManySetupBookRecordsRequest {
-  lineOfBusinessId: string;
+  campaignId: string;
   ids: string[];
 }
 
@@ -62,21 +62,21 @@ export const setupBookApi = createApi({
     getSetupBookBySearchId: builder.query<
       SetupBookResponse,
       {
-        lineOfBusinessId: string;
+        campaignId: string;
         searchId: string;
         page?: number;
         limit?: number;
         search?: string;
       }
     >({
-      query: ({ lineOfBusinessId, searchId, page, limit, search }) => {
+      query: ({ campaignId, searchId, page, limit, search }) => {
         const params = new URLSearchParams();
         if (page) params.append("page", page.toString());
         if (limit) params.append("limit", limit.toString());
         if (search) params.append("search", search);
 
         const queryString = params.toString();
-        return `api/v1/setup-books/${lineOfBusinessId}/record/${searchId}${
+        return `api/v1/setup-books/${campaignId}/record/${searchId}${
           queryString ? `?${queryString}` : ""
         }`;
       },

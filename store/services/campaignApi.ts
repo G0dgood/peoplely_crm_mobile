@@ -1,7 +1,7 @@
 import { baseUrl } from "@/shared/baseUrl";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export interface CreateLineOfBusinessRequest {
+export interface CreateCampaignRequest {
   name: string;
   description?: string;
   userId?: string;
@@ -11,14 +11,14 @@ export interface CreateLineOfBusinessRequest {
   [key: string]: any;
 }
 
-export interface CreateLineOfBusinessResponse {
+export interface CreateCampaignResponse {
   message: string;
-  lineOfBusiness?: any;
+  campaign?: any;
 }
 
-export const lineOfBusinessApi = createApi({
-  reducerPath: "lineOfBusinessApi",
-  tagTypes: ["LineOfBusiness"],
+export const campaignApi = createApi({
+  reducerPath: "campaignApi",
+  tagTypes: ["Campaign"],
   baseQuery: fetchBaseQuery({
     baseUrl,
     prepareHeaders: (headers, { getState }) => {
@@ -30,24 +30,24 @@ export const lineOfBusinessApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    createLineOfBusiness: builder.mutation<
-      CreateLineOfBusinessResponse,
-      CreateLineOfBusinessRequest
+    createCampaign: builder.mutation<
+      CreateCampaignResponse,
+      CreateCampaignRequest
     >({
       query: (data) => ({
-        url: "api/v1/line-of-business",
+        url: "api/v1/campaign",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["LineOfBusiness"],
+      invalidatesTags: ["Campaign"],
     }),
-    getLineOfBusiness: builder.query<any, string>({
-      query: (id) => `api/v1/line-of-business/${id}`,
-      providesTags: ["LineOfBusiness"],
+    getCampaign: builder.query<any, string>({
+      query: (id) => `api/v1/campaign/${id}`,
+      providesTags: ["Campaign"],
     }),
   }),
 });
 
 export const { 
-  useGetLineOfBusinessQuery,
-} = lineOfBusinessApi;
+  useGetCampaignQuery,
+} = campaignApi;

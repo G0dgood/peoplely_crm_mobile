@@ -54,7 +54,7 @@ type DispositionHistoryItem = {
 export default function CustomerDetailsModal({ visible, onClose, customer }: CustomerDetailsModalProps) {
 
   const { user } = useAuth();
-  const selectedLineOfBusinessId = user?.lineOfBusinessId;
+  const selectedCampaignId = user?.campaignId;
 
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
@@ -78,13 +78,13 @@ export default function CustomerDetailsModal({ visible, onClose, customer }: Cus
   // API Query
   const { data: apiData, isLoading: isApiLoading } = useGetDispositionsByCustomerQuery(
     {
-      lineOfBusinessId: selectedLineOfBusinessId || '',
+      campaignId: selectedCampaignId || '',
       customerId: customer?.id || '',
       page: 1,
       limit: 50
     },
     {
-      skip: !customer?.id || !selectedLineOfBusinessId
+      skip: !customer?.id || !selectedCampaignId
     }
   );
 

@@ -22,12 +22,12 @@ import SearchField from "@/components/SearchField";
 import Skeleton from "@/components/Skeleton";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 import { usePrivilege } from "@/contexts/PrivilegeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   useGetDispositionsByAgentReportQuery,
-  useGetDispositionsByLineOfBusinessReportQuery,
+  useGetDispositionsByCampaignReportQuery,
 } from "@/store/services/dispositionApi";
 
 type DispositionField = {
@@ -57,7 +57,7 @@ export default function ReportScreen() {
     [palette, colorScheme]
   );
   const { user } = useAuth();
-  const { selectedLineOfBusinessId } = useLineOfBusiness();
+  const { selectedCampaignId } = useCampaign();
   const { userPrivileges, isLoading: isPrivilegeLoading, isAdmin, isSuperAdmin } = usePrivilege();
 
   // Animated scroll tracking
@@ -105,14 +105,14 @@ export default function ReportScreen() {
     isLoading: isAgentLoading,
   } = useGetDispositionsByAgentReportQuery(
     {
-      lineOfBusinessId: selectedLineOfBusinessId || "",
+      campaignId: selectedCampaignId || "",
       agentId: user?.id || "",
       page: currentPage,
       limit: itemsPerPage,
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
     },
-    { skip: isPrivilegeLoading || !isAgent || !selectedLineOfBusinessId || !user?.id }
+    { skip: isPrivilegeLoading || !isAgent || !selectedCampaignId || !user?.id }
   );
 
   const {
@@ -120,13 +120,13 @@ export default function ReportScreen() {
     refetch: refetchLobReport,
     isFetching: isFetchingLob,
     isLoading: isLobLoading,
-  } = useGetDispositionsByLineOfBusinessReportQuery(
+  } = useGetDispositionsByCampaignReportQuery(
     {
-      lineOfBusinessId: selectedLineOfBusinessId || "",
+      campaignId: selectedCampaignId || "",
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
     },
-    { skip: isPrivilegeLoading || !isSupervisor || !selectedLineOfBusinessId }
+    { skip: isPrivilegeLoading || !isSupervisor || !selectedCampaignId }
   );
 
   const sourceData: any[] = useMemo(() => {
@@ -156,11 +156,11 @@ export default function ReportScreen() {
     setIsRefreshing(true);
     try {
       if (isAgent) {
-        if (selectedLineOfBusinessId && user?.id) {
+        if (selectedCampaignId && user?.id) {
           await refetchAgentReport();
         }
       } else if (isSupervisor) {
-        if (selectedLineOfBusinessId) {
+        if (selectedCampaignId) {
           await refetchLobReport();
         }
       }

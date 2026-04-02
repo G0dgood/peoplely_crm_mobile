@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 import { useSocket } from "@/contexts/SocketContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
@@ -67,7 +67,7 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
   const [userPrivileges, setUserPrivilegesState] = useState<UserPrivileges | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { socket } = useSocket();
-  const { selectedLineOfBusinessId } = useLineOfBusiness();
+  const { selectedCampaignId } = useCampaign();
   const { user, updateUser } = useAuth();
 
   useEffect(() => {
@@ -105,8 +105,8 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
   }, [userPrivileges]);
 
   useEffect(() => {
-    if (!socket || !selectedLineOfBusinessId) return;
-    socket.emit("joinLineOfBusiness", selectedLineOfBusinessId);
+    if (!socket || !selectedCampaignId) return;
+    socket.emit("joinCampaign", selectedCampaignId);
     const handleUpdateRole = (data: any) => {
       if (!userPrivileges || !userPrivileges.role) return;
       const currentRoleId =
@@ -151,7 +151,7 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
     return () => {
       socket.off("updateRole", handleUpdateRole);
     };
-  }, [socket, selectedLineOfBusinessId, userPrivileges, user, updateUser]);
+  }, [socket, selectedCampaignId, userPrivileges, user, updateUser]);
 
   const findModulePermission = (moduleId: string): RoleModulePermission | undefined => {
     if (!userPrivileges?.role?.permissions) return undefined;

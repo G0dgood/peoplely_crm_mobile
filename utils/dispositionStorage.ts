@@ -22,7 +22,7 @@ export interface DispositionData {
   createdAt: number;
   fillDisposition?: any[];
   customerName?: string;
-  lineOfBusinessId?: string;
+  campaignId?: string;
   [key: string]: any;
 }
 
@@ -33,7 +33,7 @@ export const saveSyncedDisposition = async (
   customerName: string,
   agentName: string | undefined,
   agentId: string | undefined,
-  lineOfBusinessId: string | undefined
+  campaignId: string | undefined
 ) => {
   try {
     const disposition: DispositionData = {
@@ -46,7 +46,7 @@ export const saveSyncedDisposition = async (
       createdAt: Date.now(),
       fillDisposition,
       customerName,
-      lineOfBusinessId
+      campaignId
     };
     const synced = await getSyncedDispositions();
     synced.push(disposition);

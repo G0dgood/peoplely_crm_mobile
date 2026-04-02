@@ -27,7 +27,7 @@ export interface CreateNotificationRequest {
         avatar?: string;
     };
     recipient: {
-        lineOfBusinessId?: string;
+        campaignId?: string;
         userId?: string;
     };
     data?: any;
@@ -51,8 +51,8 @@ export const notificationApi = createApi({
     }),
     tagTypes: ['Notification'],
     endpoints: (builder) => ({
-        getNotificationsByLineOfBusinessId: builder.query<GetNotificationsResponse, string>({
-            query: (lineOfBusinessId) => `api/v1/notifications?lineOfBusinessId=${lineOfBusinessId}`,
+        getNotificationsByCampaignId: builder.query<GetNotificationsResponse, string>({
+            query: (campaignId) => `api/v1/notifications?campaignId=${campaignId}`,
             providesTags: ['Notification'],
         }),
         markNotificationAsRead: builder.mutation<any, string>({
@@ -88,7 +88,7 @@ export const notificationApi = createApi({
 });
 
 export const { 
-    useGetNotificationsByLineOfBusinessIdQuery,
+    useGetNotificationsByCampaignIdQuery,
     useMarkNotificationAsReadMutation,
     useMarkAllNotificationsAsReadMutation,
     useCreateNotificationMutation,

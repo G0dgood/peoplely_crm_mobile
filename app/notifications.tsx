@@ -6,7 +6,7 @@ import { useSocket } from "@/contexts/SocketContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   Notification,
-  useGetNotificationsByLineOfBusinessIdQuery,
+  useGetNotificationsByCampaignIdQuery,
   useMarkNotificationAsReadMutation,
 } from "@/store/services/notificationApi";
 import { teamMembersApi } from "@/store/services/teamMembersApi";
@@ -51,11 +51,11 @@ export default function NotificationsScreen() {
   const previousUnreadCount = useRef(0);
   const previousPathname = useRef<string | null>(null);
   const isNavigating = useRef(false);
-  const lobId = user?.lineOfBusinessId || '';
+  const campaignId = user?.campaignId || '';
 
   // Notifications integration
-  const { data: notificationsData, refetch: refetchNotifications, isLoading, isFetching } = useGetNotificationsByLineOfBusinessIdQuery(lobId, {
-    skip: !lobId,
+  const { data: notificationsData, refetch: refetchNotifications, isLoading, isFetching } = useGetNotificationsByCampaignIdQuery(campaignId, {
+    skip: !campaignId,
     // pollingInterval: 30000 // Poll every 30 seconds as fallback
   });
 
@@ -63,21 +63,21 @@ export default function NotificationsScreen() {
   const notifications = React.useMemo(() => notificationsData?.notifications || [], [notificationsData]);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
-    if (!lobId) return;
+    if (!campaignId) return;
     try {
       setRefreshing(true);
       await refetchNotifications();
     } finally {
       setRefreshing(false);
     }
-  }, [lobId, refetchNotifications]);
+  }, [campaignId, refetchNotifications]);
 
   // Socket integration for Line of Business updates
   useEffect(() => {
-    if (!socket || !user?.lineOfBusinessId) return;
+    if (!socket || !user?.campaignId) return;
 
     // Join the Line of Business room
-    socket.emit("joinLineOfBusiness", user?.lineOfBusinessId);
+    socket.emit("joinCampaign", user?.campaignId);
      
 
     // Listen for status list updates
@@ -98,7 +98,7 @@ export default function NotificationsScreen() {
       socket.off("statusListUpdated", handleStatusListUpdate);
       socket.off("notificationUpdated", handleNotificationUpdate);
     };
-  }, [socket, user?.lineOfBusinessId, dispatch, refetchNotifications]);
+  }, [socket, user?.campaignId, dispatch, refetchNotifications]);
 
   // Track navigation to prevent sounds during page switches
   useEffect(() => {

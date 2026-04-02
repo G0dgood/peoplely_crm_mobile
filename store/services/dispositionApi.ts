@@ -6,7 +6,7 @@ export interface CreateDispositionRequest {
     fillDisposition: any[];
     customerId?: string;
     agentId?: string;
-    lineOfBusinessId?: string;
+    campaignId?: string;
     timestamp: string;
     [key: string]: any;
 }
@@ -17,33 +17,33 @@ export interface CreateDispositionResponse {
 }
 
 export interface GetDispositionsRequest {
-    lineOfBusinessId: string;
+    campaignId: string;
     page?: number;
     limit?: number;
 }
 
 export interface GetDispositionsByCustomerRequest {
-    lineOfBusinessId: string;
+    campaignId: string;
     customerId: string;
     page?: number;
     limit?: number;
 }
 
 export interface GetDispositionsByAgentIdRequest {
-    lineOfBusinessId: string;
+    campaignId: string;
     agentId: string;
     page?: number;
     limit?: number;
 }
 
 export interface GetDispositionsReportRequest {
-    lineOfBusinessId: string;
+    campaignId: string;
     startDate?: string;
     endDate?: string;
 }
 
 export interface GetDispositionsByAgentReportRequest {
-    lineOfBusinessId: string;
+    campaignId: string;
     agentId: string;
     page?: number;
     limit?: number;
@@ -72,29 +72,29 @@ export const dispositionApi = createApi({
             }),
             invalidatesTags: ['Disposition'],
         }),
-        getDispositionsByLineOfBusiness: builder.query<any, GetDispositionsRequest>({
-            query: ({ lineOfBusinessId, page = 1, limit = 20 }) => 
-                `api/v1/dispositions/${lineOfBusinessId}?page=${page}&limit=${limit}`,
+        getDispositionsByCampaign: builder.query<any, GetDispositionsRequest>({
+            query: ({ campaignId, page = 1, limit = 20 }) => 
+                `api/v1/dispositions/${campaignId}?page=${page}&limit=${limit}`,
             providesTags: ['Disposition'],
         }),
         getDispositionsByCustomer: builder.query<any, GetDispositionsByCustomerRequest>({
-            query: ({ lineOfBusinessId, customerId, page = 1, limit = 20 }) => 
-                `api/v1/dispositions/${lineOfBusinessId}?search=${customerId}&page=${page}&limit=${limit}`,
+            query: ({ campaignId, customerId, page = 1, limit = 20 }) => 
+                `api/v1/dispositions/${campaignId}?search=${customerId}&page=${page}&limit=${limit}`,
             providesTags: ['Disposition'],
         }),
         getDispositionsByAgentId: builder.query<any, GetDispositionsByAgentIdRequest>({
-            query: ({ lineOfBusinessId, agentId, page = 1, limit = 20 }) => 
-                `api/v1/dispositions/${lineOfBusinessId}?search=${agentId}&page=${page}&limit=${limit}`,
+            query: ({ campaignId, agentId, page = 1, limit = 20 }) => 
+                `api/v1/dispositions/${campaignId}?search=${agentId}&page=${page}&limit=${limit}`,
             providesTags: ['Disposition'],
         }),
-        getDispositionsByLineOfBusinessReport: builder.query<any, GetDispositionsReportRequest>({
-            query: ({ lineOfBusinessId, startDate, endDate }) => 
-                `api/v1/dispositions/${lineOfBusinessId}/report?startDate=${startDate}&endDate=${endDate}`,
+        getDispositionsByCampaignReport: builder.query<any, GetDispositionsReportRequest>({
+            query: ({ campaignId, startDate, endDate }) => 
+                `api/v1/dispositions/${campaignId}/report?startDate=${startDate}&endDate=${endDate}`,
             providesTags: ['Disposition'],
         }),
         getDispositionsByAgentReport: builder.query<any, GetDispositionsByAgentReportRequest>({
-            query: ({ lineOfBusinessId, agentId, page = 1, limit = 20, startDate , endDate  }) => 
-                `api/v1/dispositions/${lineOfBusinessId}/agent/${agentId}/report?page=${page}&limit=${limit}&startDate=${startDate}&endDate=${endDate}`,
+            query: ({ campaignId, agentId, page = 1, limit = 20, startDate , endDate  }) => 
+                `api/v1/dispositions/${campaignId}/agent/${agentId}/report?page=${page}&limit=${limit}&startDate=${startDate}&endDate=${endDate}`,
             providesTags: ['Disposition'],
         }),
     }),
@@ -102,9 +102,9 @@ export const dispositionApi = createApi({
 
 export const {
     useCreateDispositionMutation,
-    useGetDispositionsByLineOfBusinessQuery,
+    useGetDispositionsByCampaignQuery,
     useGetDispositionsByCustomerQuery,
     useGetDispositionsByAgentIdQuery,
-    useGetDispositionsByLineOfBusinessReportQuery,
+    useGetDispositionsByCampaignReportQuery,
     useGetDispositionsByAgentReportQuery,
 } = dispositionApi;

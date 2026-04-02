@@ -11,7 +11,7 @@ type TeamMemberLogoutRequest = {
   userId: string;
 };
 type TeamMemberLogoutResponse = any;
-type LineOfBusinessResponse = any;
+type CampaignResponse = any;
 type StatusesByLobResponse = any;
 type ChangePasswordRequest = {
   userId: string;
@@ -58,18 +58,18 @@ export const teamMembersApi = createApi({
         }),
       }
     ),
-    getLineOfBusinessForTeamMember: builder.query<
-      LineOfBusinessResponse,
+    getCampaignForTeamMember: builder.query<
+      CampaignResponse,
       string
     >({
       query: (id) => ({
-        url: `/api/v1/line-of-business/team-member/${id}`,
+        url: `/api/v1/campaign/team-member/${id}`,
         method: "GET",
       }),
     }),
-    getStatusesByLineOfBusiness: builder.query<StatusesByLobResponse, string>({
-      query: (lobId) => ({
-        url: `/api/v1/statuses/line-of-business/${lobId}`,
+    getStatusesByCampaign: builder.query<StatusesByLobResponse, string>({
+      query: (campaignId) => ({
+        url: `/api/v1/statuses/campaign/${campaignId}`,
         method: "GET",
       }),
       providesTags: ["Statuses"],
@@ -100,8 +100,8 @@ export const teamMembersApi = createApi({
 export const {
   useLoginMutation,
   useLogoutMutation,
-  useGetLineOfBusinessForTeamMemberQuery,
-  useGetStatusesByLineOfBusinessQuery,
+  useGetCampaignForTeamMemberQuery,
+  useGetStatusesByCampaignQuery,
   useChangePasswordMutation,
   useUpdateTeamMemberMutation,
 } = teamMembersApi;

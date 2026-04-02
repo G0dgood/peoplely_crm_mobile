@@ -126,7 +126,7 @@ const createStyles = (palette: typeof Colors.light) =>
 
 export default function DispositionHistoryListModal({ visible, onClose, customer }: DispositionHistoryListModalProps) {
   const { user } = useAuth();
-  const selectedLineOfBusinessId = user?.lineOfBusinessId;
+  const selectedCampaignId = user?.campaignId;
 
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
@@ -137,13 +137,13 @@ export default function DispositionHistoryListModal({ visible, onClose, customer
   // API Query
   const { data: apiData, isLoading } = useGetDispositionsByCustomerQuery(
     {
-      lineOfBusinessId: selectedLineOfBusinessId || "",
+      campaignId: selectedCampaignId || "",
       customerId: customer?.id || "",
       page: 1,
       limit: 50,
     },
     {
-      skip: !customer?.id || !selectedLineOfBusinessId,
+      skip: !customer?.id || !selectedCampaignId,
     }
   );
 

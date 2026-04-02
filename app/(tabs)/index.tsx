@@ -32,15 +32,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
 import { useAppSelector } from "@/store/hooks";
-import { useGetNotificationsByLineOfBusinessIdQuery } from "@/store/services/notificationApi";
+import { useGetNotificationsByCampaignIdQuery } from "@/store/services/notificationApi";
 import {
-  useGetLineOfBusinessForTeamMemberQuery,
-  useGetStatusesByLineOfBusinessQuery,
+  useGetCampaignForTeamMemberQuery,
+  useGetStatusesByCampaignQuery,
 } from "@/store/services/teamMembersApi";
 // @ts-ignore
 import { BarChart, LineChart } from "expo-charts";
 // @ts-ignore
-import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 import {
   generateChartData,
 } from "@/utils/chartDataGenerator";
@@ -65,7 +65,7 @@ export default function DashboardScreen() {
   const palette = Colors[colorScheme];
   const styles = React.useMemo(() => createStyles(palette), [palette]);
   const { user } = useAuth();
-  const { selectedLineOfBusinessId } = useLineOfBusiness();
+  const { selectedCampaignId } = useCampaign();
 
 
 
@@ -74,19 +74,19 @@ export default function DashboardScreen() {
     isLoading: lobLoading,
     error: lobError,
     refetch: refetchLob,
-  } = useGetLineOfBusinessForTeamMemberQuery(selectedLineOfBusinessId || "", {
-    skip: !selectedLineOfBusinessId,
+  } = useGetCampaignForTeamMemberQuery(selectedCampaignId || "", {
+    skip: !selectedCampaignId,
   });
   const {
     data: statusesData,
     refetch: refetchStatuses,
-  } = useGetStatusesByLineOfBusinessQuery(selectedLineOfBusinessId || "", {
-    skip: !selectedLineOfBusinessId,
+  } = useGetStatusesByCampaignQuery(selectedCampaignId || "", {
+    skip: !selectedCampaignId,
   });
 
   const { refetch: refetchNotifications } =
-    useGetNotificationsByLineOfBusinessIdQuery(selectedLineOfBusinessId || "", {
-      skip: !selectedLineOfBusinessId,
+    useGetNotificationsByCampaignIdQuery(selectedCampaignId || "", {
+      skip: !selectedCampaignId,
     });
 
 
@@ -149,9 +149,9 @@ export default function DashboardScreen() {
   );
   const pendingCount = pendingDispositions.length;
   // @ts-ignore
-  const apiDispositions = lobData?.lineOfBusiness?.dispositions || [];
+  const apiDispositions = lobData?.campaign?.dispositions || [];
   // @ts-ignore
-  const dashboardSettings = useMemo(() => lobData?.lineOfBusiness?.dashboardSettings || {}, [lobData]);
+  const dashboardSettings = useMemo(() => lobData?.campaign?.dashboardSettings || {}, [lobData]);
 
   // Use state to hold the resolved dispositions
   const [resolvedCombinedDispositions, setResolvedCombinedDispositions] = useState<any[]>([]);
@@ -414,7 +414,7 @@ export default function DashboardScreen() {
           <View style={styles.headerRow}>
             <PageTitle
               title={
-                lobData?.lineOfBusiness?.dashboardSettings?.dashboardName ||
+                lobData?.campaign?.dashboardSettings?.dashboardName ||
                 "Dashboard"
               }
             />
@@ -488,7 +488,7 @@ export default function DashboardScreen() {
               <Text style={styles.sectionTitle}>
                 {lobError
                   ? "Charts"
-                  : lobData?.lineOfBusiness?.dashboardSettings?.activeTab ===
+                  : lobData?.campaign?.dashboardSettings?.activeTab ===
                     "disposition"
                     ? "Dispositions"
                     : "Charts"}

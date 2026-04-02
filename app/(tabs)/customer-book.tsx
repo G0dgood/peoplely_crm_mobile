@@ -60,8 +60,8 @@ export default function CustomerBookScreen() {
     isError,
     error,
   } = useGetSetupBookBySearchIdQuery(
-    { lineOfBusinessId: user?.lineOfBusinessId || "", searchId: searchQuery },
-    { skip: !searchQuery || !user?.lineOfBusinessId }
+    { campaignId: user?.campaignId || "", searchId: searchQuery },
+    { skip: !searchQuery || !user?.campaignId }
   );
 
 
@@ -78,7 +78,7 @@ export default function CustomerBookScreen() {
         const firstItem = data[0] as Record<string, unknown>;
         const headers = Object.keys(firstItem).filter(
           (key) =>
-            !["_id", "id", "__v", "companyId", "lineOfBusinessId"].includes(
+            !["_id", "id", "__v", "companyId", "campaignId"].includes(
               key
             ) && key.toLowerCase() !== "searchid"
         );

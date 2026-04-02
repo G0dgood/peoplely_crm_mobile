@@ -2,8 +2,8 @@ import { configureStore, Reducer } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 // Import slices
+import { campaignApi } from "./services/campaignApi";
 import { dispositionApi } from "./services/dispositionApi";
-import { lineOfBusinessApi } from "./services/lineOfBusinessApi";
 import { notificationApi } from "./services/notificationApi";
 import { setupBookApi } from "./services/setupBookApi";
 import { teamMembersApi } from "./services/teamMembersApi";
@@ -21,7 +21,7 @@ export const store = configureStore({
     notification: notificationReducer as Reducer<NotificationState>,
     user: userReducer,
     [teamMembersApi.reducerPath]: teamMembersApi.reducer,
-    [lineOfBusinessApi.reducerPath]: lineOfBusinessApi.reducer,
+    [campaignApi.reducerPath]: campaignApi.reducer,
     [setupBookApi.reducerPath]: setupBookApi.reducer,
     [dispositionApi.reducerPath]: dispositionApi.reducer,
     [notificationApi.reducerPath]: notificationApi.reducer,
@@ -36,7 +36,7 @@ export const store = configureStore({
           }
     )
       .concat(teamMembersApi.middleware)
-      .concat(lineOfBusinessApi.middleware)
+      .concat(campaignApi.middleware)
       .concat(setupBookApi.middleware)
       .concat(dispositionApi.middleware)
       .concat(notificationApi.middleware),

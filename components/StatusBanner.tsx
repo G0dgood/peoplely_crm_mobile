@@ -1,6 +1,6 @@
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useGetStatusesByLineOfBusinessQuery } from "@/store/services/teamMembersApi";
+import { useGetStatusesByCampaignQuery } from "@/store/services/teamMembersApi";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +21,7 @@ export default function StatusBanner({ currentStatus }: StatusBannerProps) {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
-  const { data: statusesData } = useGetStatusesByLineOfBusinessQuery(
+  const { data: statusesData } = useGetStatusesByCampaignQuery(
     "693806b15eb41d3dbd71d442"
   );
   const apiStatuses =

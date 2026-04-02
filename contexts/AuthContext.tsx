@@ -20,7 +20,7 @@ export type User = {
   email: string;
   name?: string;
   roleName?: string;
-  lineOfBusinessId?: string;
+  campaignId?: string;
   firstName?: string;
   lastName?: string;
   avatar?: string;
@@ -210,9 +210,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         response?.user?.name || response?.teamMember?.name || undefined;
       const resolvedRoleName =
         response?.teamMember?.role?.roleName || response?.user?.role || "agent";
-      const resolvedLineOfBusinessId =
-        response?.teamMember?.lineOfBusinessId ||
-        response?.user?.lineOfBusinessId;
+      const resolvedCampaignId =
+        response?.teamMember?.campaignId ||
+        response?.user?.campaignId;
 
 
       const nextUser: User = {
@@ -220,7 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         email: String(resolvedEmail),
         name: resolvedName || "",
         roleName: resolvedRoleName,
-        lineOfBusinessId: resolvedLineOfBusinessId,
+        campaignId: resolvedCampaignId,
         roleId: undefined
       };
 

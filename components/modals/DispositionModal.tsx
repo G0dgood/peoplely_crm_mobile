@@ -23,7 +23,7 @@ import DispositionTextField from "@/components/disposition-fields/DispositionTex
 import PageTitle from "@/components/PageTitle";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLineOfBusiness } from "@/contexts/LineOfBusinessContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
@@ -81,12 +81,12 @@ export default function DispositionModal({ visible, onClose, customerId, custome
   const styles = useMemo(() => createModalStyles(palette), [palette]);
 
   const { user } = useAuth();
-  const { lineOfBusinessData } = useLineOfBusiness();
+  const { campaignData } = useCampaign();
   const { loadDispositionsIntoRedux } = useDispositionSync();
   const [createDisposition] = useCreateDispositionMutation();
   const { emit: send } = useSocket();
 
-  const selectedLineOfBusinessId = lineOfBusinessData?.lineOfBusiness?._id;
+  const selectedCampaignId = campaignData?.campaign?._id;
   const authUser = user;
 
   const [formData, setFormData] = useState<DispositionFormState>({});
@@ -97,8 +97,8 @@ export default function DispositionModal({ visible, onClose, customerId, custome
 
   // Get dispositions from context
   const fields = useMemo(() => {
-    return (lineOfBusinessData?.lineOfBusiness?.dashboardSettings?.dispositions || []) as DispositionField[];
-  }, [lineOfBusinessData]);
+    return (campaignData?.campaign?.dashboardSettings?.dispositions || []) as DispositionField[];
+  }, [campaignData]);
 
   // Monitor network status
   useEffect(() => {
@@ -140,8 +140,8 @@ export default function DispositionModal({ visible, onClose, customerId, custome
 
   const handleSaveAndPost = async () => {
     // Validate IDs
-    if (!customerId || !selectedLineOfBusinessId) {
-      console.error("Missing required IDs:", { customerId, selectedLineOfBusinessId });
+    if (!customerId || !selectedCampaignId) {
+      console.error("Missing required IDs:", { customerId, selectedCampaignId });
       toastError("System Error: Missing Customer or Line of Business ID.");
       return;
     }
@@ -209,7 +209,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
             fillDisposition: dispositionData,
             customerId,
             agentId: authUser?.id,
-            lineOfBusinessId: selectedLineOfBusinessId || undefined,
+            campaignId: selectedCampaignId || undefined,
             timestamp: new Date().toISOString(),
           }).unwrap();
 
@@ -221,7 +221,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
                 fillDisposition: dispositionData,
                 customerId,
                 agentId: authUser?.id,
-                lineOfBusinessId: selectedLineOfBusinessId || undefined,
+                campaignId: selectedCampaignId || undefined,
                 timestamp: new Date().toISOString(),
               },
             });
@@ -234,7 +234,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
             customerName,
             authUser?.name,
             authUser?.id,
-            selectedLineOfBusinessId || undefined
+            selectedCampaignId || undefined
           );
 
           toastSuccess('Disposition saved successfully');
@@ -264,7 +264,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
           dateContacted: new Date().toLocaleString(),
           customerId,
           customerName,
-          lineOfBusinessId: selectedLineOfBusinessId
+          campaignId: selectedCampaignId
         });
 
         await loadDispositionsIntoRedux();

@@ -67,7 +67,7 @@ const notificationSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addMatcher(
-      notificationApi.endpoints.getNotificationsByLineOfBusinessId.matchFulfilled,
+      notificationApi.endpoints.getNotificationsByCampaignId.matchFulfilled,
       (state, { payload }) => {
         const list = payload?.notifications || [];
         state.unreadCount = list.filter((n: any) => !n.isRead).length;
