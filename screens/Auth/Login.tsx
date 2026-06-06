@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 
-import { PeoplelyLogo } from "@/assets/svg/PeoplelyLogo";
+import { OutcessLogo } from "@/assets/svg/OutcessLogo";
 import TextField from "@/components/forms/TextField";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,9 +64,9 @@ const Login = () => {
     >
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <View style={styles.peoplelyTextContainer}>
-            <PeoplelyLogo width={40} />
-            <Text style={styles.peoplely}>Peoplely</Text>
+          <View style={styles.outcessTextContainer}>
+            <OutcessLogo width={40} />
+            <Text style={styles.outcess}>Outcess</Text>
           </View>
 
           <Text style={styles.subtitle}>
@@ -147,7 +147,7 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       justifyContent: "flex-end"
     },
 
-    peoplely: {
+    outcess: {
       color: palette.textPrimary,
       fontSize: 28,
       fontWeight: "600",
@@ -155,7 +155,7 @@ const createStyles = (palette: (typeof Colors)["light"]) =>
       marginLeft: 8,
     },
 
-    peoplelyTextContainer: {
+    outcessTextContainer: {
       flexDirection: "row",
       alignItems: "center",
     },

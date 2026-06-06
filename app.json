@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "peoplely",
-    "slug": "peoplely",
+    "name": "outcess",
+    "slug": "outcess",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "peoplely",
+    "scheme": "outcess",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

@@ -131,14 +131,14 @@ export const PrivilegeProvider: React.FC<PrivilegeProviderProps> = ({
           "userPrivileges",
           JSON.stringify(updatedUserPrivileges)
         ).catch(() => { });
-        AsyncStorage.getItem("peoplely-user")
+        AsyncStorage.getItem("outcess-user")
           .then((storedUser) => {
             if (storedUser) {
               const parsedUser = JSON.parse(storedUser);
               if (parsedUser.role && typeof parsedUser.role === "object") {
                 parsedUser.role.permissions = data.role.permissions;
                 AsyncStorage.setItem(
-                  "peoplely-user",
+                  "outcess-user",
                   JSON.stringify(parsedUser)
                 ).catch(() => { });
               }

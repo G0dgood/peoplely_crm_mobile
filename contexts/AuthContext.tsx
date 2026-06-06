@@ -126,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   useEffect(() => {
     const loadAuthData = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem("peoplely-user");
+        const storedUser = await AsyncStorage.getItem("outcess-user");
         const storedToken = await AsyncStorage.getItem("token");
         if (storedUser && storedToken) {
           const parsedUser = JSON.parse(storedUser);
@@ -247,7 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setTokensState({ accessToken: response.teamMember.token });
       setAuthToken(String(response.teamMember.token));
       try {
-        await AsyncStorage.setItem("peoplely-user", JSON.stringify(nextUser));
+        await AsyncStorage.setItem("outcess-user", JSON.stringify(nextUser));
         await AsyncStorage.setItem("token", String(response.teamMember.token));
         await AsyncStorage.setItem(
           storageKey,
@@ -319,7 +319,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setAuthData(null);
       setTokensState(null);
       setAuthToken(null);
-      await AsyncStorage.removeItem("peoplely-user");
+      await AsyncStorage.removeItem("outcess-user");
       await AsyncStorage.removeItem("token");
       await AsyncStorage.removeItem("userPrivileges");
       await AsyncStorage.removeItem(storageKey);

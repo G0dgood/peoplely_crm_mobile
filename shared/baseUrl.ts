@@ -1,4 +1,4 @@
-export const baseUrl: any = "https://peoplely-api.onrender.com";
+export const baseUrl: any = "https://outcess-api.onrender.com";
 // export const buildDynamicURL = (
 //   base: any,
 //   applicationStatus: any,

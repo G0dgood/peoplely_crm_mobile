@@ -20,8 +20,10 @@ import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGetTeamMembersByCampaignIdQuery } from "@/store/services/teamMembersApi";
 
 type TeamMember = {
+  _id: string;
   id: string;
   fullName: string;
   email: string;
@@ -32,8 +34,6 @@ type TeamMember = {
   status: "Logged In" | "Logged Out" | "In Meeting" | string;
 };
 
-
-
 export default function TeamMembersScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
@@ -43,6 +43,13 @@ export default function TeamMembersScreen() {
   );
   const { user } = useAuth();
   const { socket } = useSocket();
+
+  const campaignId = user?.campaignId || "";
+
+  const { data: teamMembersData, error, isLoading, refetch } = useGetTeamMembersByCampaignIdQuery(
+    { campaignId, page: 1, limit: 100 },
+    { skip: !campaignId }
+  );
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [query, setQuery] = useState("");
@@ -60,6 +67,33 @@ export default function TeamMembersScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const teams = ["All Teams", "A", "B", "C", "QA"];
+
+  useEffect(() => {
+    if (teamMembersData && Array.isArray(teamMembersData.teamMembers)) {
+      const mapped = teamMembersData.teamMembers.map((member: any) => {
+        let displayStatus = "Logged Out";
+        if (member.status) {
+          if (typeof member.status === "object") {
+            displayStatus = member.status.status || "Logged Out";
+          } else {
+            displayStatus = member.status;
+          }
+        }
+        return {
+          _id: member._id || "",
+          id: member.userId || "N/A",
+          fullName: member.name || `${member.firstName || ""} ${member.lastName || ""}`.trim(),
+          email: member.email || "",
+          phone: member.phone || "",
+          role: typeof member.role === "object" ? (member.role?.roleName || "Agent") : (member.role || "Agent"),
+          supervisor: typeof member.supervisor === "object" ? (member.supervisor?.name || "Unassigned") : (member.supervisor || "Unassigned"),
+          team: member.team || "Unassigned",
+          status: displayStatus,
+        };
+      });
+      setTeamMembers(mapped);
+    }
+  }, [teamMembersData]);
 
   // Extract all unique supervisors from the data
   const allSupervisors = useMemo(() => {
@@ -100,13 +134,14 @@ export default function TeamMembersScreen() {
     const handleStatusUpdate = (data: {
       teamMemberId: string;
       name: string;
-      status: string;
+      status: any;
       timestamp: string;
     }) => {
+      const newStatusStr = typeof data.status === "object" ? data.status.status : data.status;
       setTeamMembers((prevMembers) =>
         prevMembers.map((member) =>
-          member.id === data.teamMemberId
-            ? { ...member, status: data.status }
+          member._id === data.teamMemberId
+            ? { ...member, status: newStatusStr }
             : member
         )
       );

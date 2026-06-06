@@ -10,4 +10,4 @@ const logo = ` <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns
 </defs>
 </svg>
 `;
-export const PeoplelyLogo = ({ width }: { width: number; }) => <SvgXml xml={logo} width={width} />;
+export const OutcessLogo = ({ width }: { width: number; }) => <SvgXml xml={logo} width={width} />;

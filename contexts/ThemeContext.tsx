@@ -4,7 +4,7 @@ import { useColorScheme as useRNColorScheme } from "react-native";
 
 export type ColorScheme = "light" | "dark" | "auto";
 
-const THEME_STORAGE_KEY = "@peoplely_theme_preference";
+const THEME_STORAGE_KEY = "@outcess_theme_preference";
 
 type ThemeContextValue = {
   colorScheme: ColorScheme;

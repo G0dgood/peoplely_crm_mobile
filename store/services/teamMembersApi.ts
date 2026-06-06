@@ -94,6 +94,16 @@ export const teamMembersApi = createApi({
         body,
       }),
     }),
+    getTeamMembersByCampaignId: builder.query<
+      any,
+      { campaignId: string; page?: number; limit?: number; search?: string }
+    >({
+      query: ({ campaignId, page = 1, limit = 10, search = "" }) => ({
+        url: `/api/v1/team-members/campaign/${campaignId}`,
+        method: "GET",
+        params: { page, limit, search },
+      }),
+    }),
   }),
 });
 
@@ -104,4 +114,5 @@ export const {
   useGetStatusesByCampaignQuery,
   useChangePasswordMutation,
   useUpdateTeamMemberMutation,
+  useGetTeamMembersByCampaignIdQuery,
 } = teamMembersApi;
