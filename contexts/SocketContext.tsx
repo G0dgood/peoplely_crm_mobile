@@ -68,7 +68,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     }
 
     if (isConnecting) {
-      console.log("Socket connection already in progress");
       return;
     }
 

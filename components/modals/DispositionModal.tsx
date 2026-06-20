@@ -86,7 +86,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
   const [createDisposition] = useCreateDispositionMutation();
   const { emit: send } = useSocket();
 
-  const selectedCampaignId = campaignData?.campaign?._id;
+  const selectedCampaignId = campaignData?._id;
   const authUser = user;
 
   const [formData, setFormData] = useState<DispositionFormState>({});
@@ -97,7 +97,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
 
   // Get dispositions from context
   const fields = useMemo(() => {
-    return (campaignData?.campaign?.dashboardSettings?.dispositions || []) as DispositionField[];
+    return (campaignData?.dashboardSettings?.dispositions || []) as DispositionField[];
   }, [campaignData]);
 
   // Monitor network status
