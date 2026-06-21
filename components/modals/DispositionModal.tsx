@@ -27,6 +27,7 @@ import { useCampaign } from "@/contexts/CampaignContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDispositionSync } from "@/hooks/useDispositionSync";
+import { useApiError } from "@/hooks/useApiError";
 import { useCreateDispositionMutation } from "@/store/services/dispositionApi";
 import { saveDisposition, saveSyncedDisposition } from "@/utils/dispositionStorage";
 import { toCamelCase } from "@/utils/stringUtils";
@@ -83,7 +84,9 @@ export default function DispositionModal({ visible, onClose, customerId, custome
   const { user } = useAuth();
   const { campaignData } = useCampaign();
   const { loadDispositionsIntoRedux } = useDispositionSync();
-  const [createDisposition] = useCreateDispositionMutation();
+  const [createDisposition, { isError, error }] = useCreateDispositionMutation();
+
+  useApiError(isError, error, "Failed to save disposition online");
   const { emit: send } = useSocket();
 
   const selectedCampaignId = campaignData?._id;
@@ -244,13 +247,7 @@ export default function DispositionModal({ visible, onClose, customerId, custome
 
         } catch (error: unknown) {
           console.error('Error saving disposition online:', error);
-
-          // If the server returns a specific error message, show it
-          const serverError = (error as ApiError)?.data?.error || (error as ApiError)?.data?.message;
-          if (serverError) {
-            toastError(serverError);
-            // Do not return here - continue to save offline
-          }
+          // useApiError hook handles the error UI reactively
         }
       }
 

@@ -28,8 +28,10 @@ import { baseUrl } from "@/shared/baseUrl";
 import {
   useLoginMutation,
   useUpdateTeamMemberMutation,
+  useChangePasswordMutation,
 } from "@/store/services/teamMembersApi";
 import { router } from "expo-router";
+import useApiError from "@/hooks/useApiError";
 
 const TABS = [
   { id: "profile", label: "Profile", icon: "person-outline" },
@@ -80,8 +82,15 @@ export default function SettingsScreen() {
   const palette = Colors[resolvedColorScheme];
   const isDarkMode = resolvedColorScheme === "dark";
   const { signOut, user, authData } = useAuth();
-  const [verifyLogin] = useLoginMutation();
-  const [updateTeamMember] = useUpdateTeamMemberMutation();
+  const [verifyLogin, { isError: isVerifyError, error: verifyError }] = useLoginMutation();
+  const [updateTeamMember, { isError: isUpdateError, error: updateError }] = useUpdateTeamMemberMutation();
+  const [changePassword, { isLoading: isChangingPassword, isError: isChangePasswordError, error: changePasswordError }] = useChangePasswordMutation();
+  const [apiError, setApiError] = useState<{ isError: boolean; error: unknown }>({ isError: false, error: null });
+
+  useApiError(isVerifyError, verifyError, "Verification failed");
+  useApiError(isUpdateError, updateError, "Profile update failed");
+  useApiError(isChangePasswordError, changePasswordError, "Password update failed");
+  useApiError(apiError.isError, apiError.error, "Password update failed");
 
   const [showAlert, setShowAlert] = React.useState(false);
   const [loggingOut, setLoggingOut] = React.useState(false);
@@ -110,7 +119,6 @@ export default function SettingsScreen() {
     confirmPassword: false,
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [changingPassword, setChangingPassword] = useState(false);
   const scrollRef = useRef<any>(null);
   const fieldPositions = useRef<Record<string, number>>({});
   const anchors = useRef<{ profile: number; preferences: number }>({
@@ -121,7 +129,7 @@ export default function SettingsScreen() {
     if (!scrollRef.current) return;
     try {
       scrollRef.current.scrollTo({ y: Math.max(0, y - 24), animated: true });
-    } catch {}
+    } catch { }
   };
 
   const styles = useMemo(
@@ -238,8 +246,8 @@ export default function SettingsScreen() {
       Alert.alert("Password mismatch", "New passwords do not match.");
       return;
     }
+    setApiError({ isError: false, error: null });
     try {
-      setChangingPassword(true);
       const tm = (authData && (authData.user || authData.teamMember)) || {};
       const uid =
         tm.userId ||
@@ -251,35 +259,12 @@ export default function SettingsScreen() {
         userId: String(uid),
         password: currentPassword,
       }).unwrap();
-      const memberId = String(tm._id || user?.id || "6938395a125676fa8ddccd65");
-      const resp = await fetch(
-        `${baseUrl}/api/v1/team-members/${memberId}/password`,
-        {
-          method: "PATCH",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            currentPassword,
-            password: newPassword,
-          }),
-        }
-      );
-      const contentType = resp.headers.get("content-type") || "";
-      let data: any = null;
-      if (contentType.includes("application/json")) {
-        data = await resp.json();
-      } else {
-        const text = await resp.text();
-        data = { message: text };
-      }
-      if (!resp.ok) {
-        const msg =
-          data?.message ||
-          (typeof data === "string" ? data : "Password update failed");
-        throw new Error(msg);
-      }
+      const memberId = String(tm._id || user?.id);
+      await changePassword({
+        id: memberId,
+        currentPassword,
+        password: newPassword,
+      }).unwrap();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       Alert.alert("Success", "Password updated successfully.");
       setPasswordValues({
@@ -288,14 +273,8 @@ export default function SettingsScreen() {
         confirmPassword: "",
       });
     } catch (error: any) {
-      const message =
-        error?.data?.message ||
-        error?.error ||
-        error?.message ||
-        "Password update failed";
-      Alert.alert("Error", message); 
-    } finally {
-      setChangingPassword(false);
+      console.error("Sign-in/Password verification error", error);
+      // useApiError hook handles verifyLogin and changePassword errors reactively.
     }
   };
 
@@ -375,12 +354,8 @@ export default function SettingsScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 Alert.alert("Success", "Profile updated successfully.");
               } catch (error: any) {
-                const message =
-                  error?.data?.message ||
-                  error?.error ||
-                  error?.message ||
-                  "Profile update failed";
-                Alert.alert("Error", message);
+                console.error("Profile update error", error);
+                // useApiError hook handles the error UI reactively
               }
             }
           }}
@@ -452,7 +427,7 @@ export default function SettingsScreen() {
                 (field.key === "username" ||
                   field.key === "emailAddress" ||
                   !isEditing) &&
-                  styles.readOnlyInput,
+                styles.readOnlyInput,
               ]}
               onFocus={() => {
                 const y = fieldPositions.current[field.key];
@@ -516,10 +491,10 @@ export default function SettingsScreen() {
       <TouchableOpacity
         style={styles.passwordButton}
         onPress={handleUpdatePassword}
-        disabled={changingPassword}
+        disabled={isChangingPassword}
         activeOpacity={0.8}
       >
-        {changingPassword ? (
+        {isChangingPassword ? (
           <Text style={styles.passwordButtonText}>Updating...</Text>
         ) : (
           <Text style={styles.passwordButtonText}>Update Password</Text>
@@ -630,8 +605,8 @@ export default function SettingsScreen() {
                       tab.id === "profile"
                         ? anchors.current.profile
                         : tab.id === "preferences"
-                        ? anchors.current.preferences
-                        : 0;
+                          ? anchors.current.preferences
+                          : 0;
                     if (typeof y === "number") {
                       setTimeout(() => scrollTo(y), 0);
                     }

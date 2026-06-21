@@ -14,9 +14,9 @@ type TeamMemberLogoutResponse = any;
 type CampaignResponse = any;
 type StatusesByLobResponse = any;
 type ChangePasswordRequest = {
-  userId: string;
-  currentPassword: string;
-  newPassword: string;
+  id: string;
+  currentPassword?: string;
+  password?: string;
 };
 type ChangePasswordResponse = any;
 type UpdateTeamMemberRequest = {
@@ -78,10 +78,10 @@ export const teamMembersApi = createApi({
       ChangePasswordResponse,
       ChangePasswordRequest
     >({
-      query: (payload) => ({
-        url: `/api/v1/team-members/password`,
+      query: ({ id, ...body }) => ({
+        url: `/api/v1/team-members/${id}/password`,
         method: "PATCH",
-        body: payload,
+        body,
       }),
     }),
     updateTeamMember: builder.mutation<

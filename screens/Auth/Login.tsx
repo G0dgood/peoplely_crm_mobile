@@ -18,6 +18,7 @@ import TextField from "@/components/forms/TextField";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import useApiError from "@/hooks/useApiError";
 
 const Login = () => {
   const colorScheme = useColorScheme() ?? "light";
@@ -30,6 +31,9 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [apiError, setApiError] = useState<{ isError: boolean; error: unknown }>({ isError: false, error: null });
+
+  useApiError(apiError.isError, apiError.error, "Login failed");
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -38,17 +42,18 @@ const Login = () => {
     }
 
     setIsLoading(true);
+    setApiError({ isError: false, error: null });
     try {
       const result = await signIn(email, password);
       if (result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         router.replace("/(tabs)");
       } else {
-        Alert.alert("Login Failed", result.error || "An error occurred.");
+        setApiError({ isError: true, error: result.error || "Login failed" });
       }
     } catch (_error) {
       console.error("Sign-in error", _error);
-      Alert.alert("Error", "An unexpected error occurred.");
+      setApiError({ isError: true, error: _error });
     } finally {
       setIsLoading(false);
     }
