@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -78,6 +79,7 @@ const PROFILE_COPY =
 const PROFILE_IMAGE_STORAGE_KEY = "@user_profile_image";
 
 export default function SettingsScreen() {
+  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
   const { colorScheme, resolvedColorScheme, setColorScheme } = useTheme();
   const palette = Colors[resolvedColorScheme];
   const isDarkMode = resolvedColorScheme === "dark";
@@ -639,6 +641,9 @@ export default function SettingsScreen() {
           {activeTab === "profile" && renderProfileTab()}
           {activeTab === "password" && renderPasswordTab()}
           {activeTab === "preferences" && renderPreferencesTab()}
+
+          {/* Version Footer */}
+          <Text style={styles.footerVersionText}>Version {appVersion}</Text>
         </Animated.ScrollView>
       </KeyboardAvoidingView>
       <AnimatedHeader title="Account Settings" scrollY={scrollY} />
@@ -961,5 +966,11 @@ const createStyles = (
       fontSize: 15,
       fontWeight: "600",
       color: palette.statusError,
+    },
+    footerVersionText: {
+      fontSize: 12,
+      color: palette.textSecondary,
+      textAlign: "center",
+      marginTop: 24,
     },
   });
